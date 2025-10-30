@@ -136,10 +136,12 @@ function verRol() {
   document.getElementById("accion").innerHTML = `<button class="btn" onclick="siguienteJugador()">Siguiente jugador</button>`;
 }
 
+// ✅ Modificación: mensaje final con jugador aleatorio
 function siguienteJugador() {
   currentJugador++;
   if (currentJugador >= jugadores.length) {
-    document.getElementById("output").innerHTML = "Todos vieron su rol. ¡A jugar!";
+    const jugadorAleatorio = jugadores[Math.floor(Math.random() * jugadores.length)];
+    document.getElementById("output").innerHTML = `Todos han visto su rol, empieza <b>${jugadorAleatorio}</b>`;
     document.getElementById("accion").innerHTML = `<button class="btn" onclick="nuevaRonda()">Nueva ronda</button>`;
   } else {
     document.getElementById("output").innerHTML = "Pasa el dispositivo a <b>" + jugadores[currentJugador] + "</b>";
