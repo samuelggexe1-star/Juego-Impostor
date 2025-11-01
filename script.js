@@ -1,70 +1,115 @@
 const categorias = {
- "Full combo": [],
+ const categorias = {
+  "Full combo": [],
 
   "Personas": [
-    "Samuel", "Adriel", "Álvaro", "Pedro", "Mateo", "Alejandro", 
-    "Diego", "Fran", "David", "Daniel", "Ryan"
+    "Samuel", "Adriel", "Álvaro", "Pedro", "Mateo", "Alejandro", "Diego", "Fran", "David", "Daniel", "Ryan"
   ],
 
   "Animales": [
-    "Chiska", "Frida", "Dori", "Bimba", "Perro", "Gato", "Conejo", "Tiburón", "Tortuga", "Caballo",
-    "León", "Loro", "Panda", "Erizo", "Camaleón", "Delfín", "Pulpo", "Murciélago", "Zorro", "Rana",
-    "Pingüino", "Gaviota", "Cangrejo", "Ciervo", "Gallina", "Cerdo", "Ratón", "Cabra", "Serpiente", "Elefante"
-  ],
-
-  "Cartas del Clash Royale": [
-    "Montapuercos", "P.E.K.K.A", "Mago", "Megaesbirro", "Barril de duendes", "Minero", "Gigante noble",
-    "Globo bombástico", "Chispitas", "Bruja", "Caballero", "Esqueleto gigante", "Tronco", "Leñador",
-    "Dragón infernal", "Mago eléctrico", "Reina arquera", "Mini P.E.K.K.A", "Arquero mágico", "Duende lanzadardos",
-    "Veneno", "Cementerio", "Príncipe", "Valquiria", "Bola de fuego", "Hielo", "Pillos", "Horda de esbirros",
-    "Príncipe oscuro", "Cazador", "Torre infernal", "Duendes con lanza", "Ejército de esqueletos", "Gigante eléctrico",
-    "Barril de bárbaros", "Chispa", "Furia", "Mago de hielo", "Mago", "Reina arquera", "Sabueso de lava"
+    "Perro", "Gato", "Conejo", "Tiburón", "Tortuga", "Caballo", "León", "Loro", "Panda", "Erizo",
+    "Camaleón", "Delfín", "Pulpo", "Murciélago", "Zorro", "Rana", "Pingüino", "Gaviota", "Cangrejo", "Ciervo",
+    "Cabra", "Serpiente", "Elefante", "Oso", "Nutria", "Chiska", "Bimba", "Dori", "Frida"
   ],
 
   "Comida": [
-    "Tortilla de patatas", "Paella", "Croquetas", "Jamón serrano", "Gazpacho", "Churros", "Empanada", 
-    "Pulpo a la gallega", "Queso", "Bocadillo", "Pizza", "Hamburguesa", "Tacos", "Hot dog", "Canelones", 
-    "Arepa", "Patatas bravas", "Calamares", "Pan con tomate", "Tarta de queso", "Papas arrugadas", 
-    "Gofio", "Cachopo", "Lasaña", "Ensaladilla rusa", "Kebab", "Rosquilla", "Helado", "Tarta de chocolate", "Turrón"
+    "Tortilla de patatas", "Paella", "Croquetas", "Jamón serrano", "Gazpacho", "Churros", "Empanada",
+    "Pulpo a la gallega", "Pizza", "Hamburguesa", "Tacos", "Sushi", "Ceviche", "Kebab", "Falafel",
+    "Canelones", "Lasaña", "Ramen", "Burrito", "Hot dog", "Arepa", "Poke", "Dumplings", "Gyozas", "Baklava"
   ],
 
   "Juegos": [
-    "NBA 2K", "Juego del impostor", "Minecraft", "Fortnite", "Among Us", "GTA V", "Clash Royale",
-    "Call of Duty", "Valorant", "Roblox", "FIFA", "Brawl Stars", "Apex Legends", "Fall Guys",
-    "Stumble Guys", "Subway Surfers", "Geometry Dash", "Rocket League", "PUBG", "The Sims",
-    "Candy Crush", "Plantas vs Zombies", "Mario Kart", "Zelda", "Super Smash Bros", "Terraria",
-    "Five Nights at Freddy’s", "Spore", "League of Legends", "Counter Strike", "Overwatch", "Ark", "Genshin Impact"
+    "Minecraft", "Fortnite", "Among Us", "GTA V", "Clash Royale", "Call of Duty", "Valorant", "Roblox",
+    "FIFA", "Brawl Stars", "Apex Legends", "Fall Guys", "Rocket League", "PUBG", "The Sims",
+    "League of Legends", "Counter Strike", "Overwatch", "Stardew Valley", "Terraria", "Hades", "Genshin Impact", "Mario Kart", "Zelda", "Cyberpunk 2077", "NBA 2K", "Juego Impostor"
   ],
 
   "Marcas de coche": [
     "BMW", "Audi", "Mercedes", "Seat", "Volkswagen", "Ford", "Renault", "Toyota", "Honda", "Nissan",
-    "Peugeot", "Citroën", "Kia", "Hyundai", "Lamborghini", "Ferrari", "Porsche", "Opel", "Volvo", "Tesla",
-    "Fiat", "Suzuki", "Maserati", "Jaguar", "Alfa Romeo", "Chevrolet", "Mini", "Bentley", "Bugatti", "Dacia",
-    "Lexus", "Subaru", "Jeep", "Cadillac", "Smart", "Land Rover", "Mazda", "Abarth", "Cupra", "Skoda"
+    "Peugeot", "Citroën", "Kia", "Hyundai", "Lamborghini", "Ferrari", "Porsche", "Tesla", "Fiat", "Mini",
+    "Volvo", "Skoda", "Jeep", "Maserati", "Alfa Romeo"
   ],
 
   "Lugares Locales": [
-    "El Médano", "PH", "Aldea Blanca", "Los Cristianos", "Las Américas", "Adeje", "San Isidro", "Los Abrigos", "Costa del Silencio",
-    "Granadilla", "La Tejita", "La Caleta", "Vilaflor", "Fañabé", "Golf del Sur", "Palm-Mar", "Guaza",
-    "Arona", "Charco del Cliso", "Tajao", "Abades", "Las Galletas", "Parque La Reina", "Buzanada",
-    "La Mareta", "Chayofa", "Cabo Blanco", "Valle San Lorenzo", "El Fraile", "Chío", "Santiago del Teide", "Callao Salvaje"
+    "El Médano", "La Tejita", "Los Cristianos", "Las Américas", "Adeje", "San Isidro", "Los Abrigos",
+    "Costa del Silencio", "Granadilla", "La Caleta", "Fañabé", "Golf del Sur", "Palm-Mar", "Guaza",
+    "Arona", "Las Galletas", "Parque La Reina", "Buzanada", "Chayofa", "Cabo Blanco", "PH", "Buzanada", "Miraverde", "Aldea Blanca", "Los cardones"
   ],
 
   "Lugares": [
-    "Madrid", "Barcelona", "Valencia", "Sevilla", "Tenerife", "Lanzarote", "Granada", "Bilbao", "Toledo", "Málaga",
-    "Londres", "París", "Roma", "Berlín", "Nueva York", "Tokio", "Lisboa", "Ámsterdam", "Atenas", "Praga",
-    "Viena", "Dublín", "Varsovia", "Budapest", "Oslo", "Copenhague", "Bruselas", "Zúrich", "Moscú", "Estocolmo",
-    "Buenos Aires", "Santiago de Chile", "México DF", "Lima", "Bogotá", "Quito", "Caracas", "Río de Janeiro", "Toronto", "Los Ángeles"
+    "Madrid", "Barcelona", "Valencia", "Sevilla", "Tenerife", "Londres", "París", "Roma", "Berlín", "Nueva York",
+    "Tokio", "Lisboa", "Ámsterdam", "Praga", "Viena", "Dublín", "Oslo", "Sídney", "Moscú", "Estocolmo",
+    "Buenos Aires", "Santiago de Chile", "México", "Lima", "Bogotá"
   ],
 
   "Objetos": [
     "Móvil", "Bolígrafo", "Mochila", "Reloj", "Silla", "Mesa", "Cargador", "Camiseta", "Altavoz", "Botella",
     "Gafas", "Cepillo", "Cojín", "Cuchara", "Taza", "Auriculares", "Ratón", "Teclado", "Zapato", "Libro",
-    "Ventilador", "Cartera", "Llave", "Mando", "Pelota", "Lámpara", "Rueda", "Teléfono", "Cuchillo", "Bolsa",
-    "Cuerda", "Cable", "Papel", "Espejo", "Pizarra", "Sábana", "Calcetín", "Tijeras", "Reloj de arena", "Linterna"
+    "Linterna", "Calculadora", "Cartera", "Llave", "Mando"
+  ],
+
+  "Tecnología": [
+    "Ordenador", "Tablet", "Smartphone", "Router", "Cámara", "Televisor", "Impresora", "Disco duro",
+    "SSD", "Procesador", "Tarjeta gráfica", "Microfono", "Auriculares", "Altavoz", "Dron",
+    "Smartwatch", "Consola", "Placa base", "Cargador", "Monitor"
+  ],
+
+  "Películas": [
+    "El Padrino", "Titanic", "Avatar", "Interestelar", "Parásitos", "Inception", "Gladiator", "Matrix",
+    "Los Vengadores", "Toy Story", "Jurassic Park", "Harry Potter", "El Señor de los Anillos", "La La Land",
+    "Coco", "Forrest Gump", "Regreso al Futuro", "Joker", "Mad Max", "El Gran Hotel Budapest"
+  ],
+
+  "Música": [
+    "Pop", "Rock", "Jazz", "Rap", "Reguetón", "Electrónica", "Clásica", "Blues", "Country", "Indie",
+    "Funk", "Soul", "Salsa", "Bachata", "Merengue", "K-Pop", "Metal", "Trap", "House", "Techno"
+  ],
+
+  "Profesiones": [
+    "Médico", "Profesor", "Ingeniero", "Abogado", "Enfermero", "Carpintero", "Panadero", "Peluquero",
+    "Policía", "Bombero", "Electricista", "Programador", "Diseñador", "Arquitecto", "Periodista",
+    "Cocinero", "Mecánico", "Dentista", "Veterinario", "Agricultor"
+  ],
+
+  "Ciencia": [
+    "Física", "Química", "Biología", "Astronomía", "Geología", "Botánica", "Zoología", "Ecología",
+    "Genética", "Meteorología", "Neurociencia", "Matemáticas", "Robótica", "Nanotecnología", "Microbiología",
+    "Psicología", "Oceanografía", "Paleontología", "Farmacología", "Ingeniería genética"
+  ],
+
+  "Plantas": [
+    "Roble", "Pino", "Palmera", "Higuera", "Cactus", "Aloe vera", "Rosa", "Girasol", "Tulipán", "Orquídea",
+    "Lavanda", "Menta", "Albahaca", "Tomatera", "Patata", "Bambú", "Helecho", "Lirio", "Magnolia", "Olivo"
+  ],
+
+  "Instrumentos musicales": [
+    "Guitarra", "Piano", "Violín", "Batería", "Saxofón", "Flauta", "Trompeta", "Acordeón", "Ukelele",
+    "Cello", "Contrabajo", "Clarinete", "Órgano", "Armónica", "Mandolina", "Xilófono", "Oboe", "Trombón", "Banjo", "Sitar"
+  ],
+
+  "Emociones": [
+    "Alegría", "Tristeza", "Ira", "Sorpresa", "Miedo", "Calma", "Nostalgia", "Euforia", "Vergüenza", "Orgullo",
+    "Ansiedad", "Curiosidad", "Empatía", "Envidia", "Amor", "Aburrimiento", "Confusión", "Gratitud", "Frustración", "Alivio"
+  ],
+
+  "Ropa y accesorios": [
+    "Camiseta", "Pantalones", "Zapatillas", "Chaqueta", "Gorra", "Sombrero", "Bufanda", "Guantes", "Calcetines",
+    "Corbata", "Vestido", "Falda", "Botas", "Sandalias", "Pijama", "Traje", "Cinturón", "Reloj", "Mochila", "Bolso"
+  ],
+
+  "Herramientas": [
+    "Martillo", "Destornillador", "Alicates", "Taladro", "Sierra", "Llave inglesa", "Cúter", "Nivel",
+    "Cinta métrica", "Lima", "Soldador", "Cepillo", "Maza", "Pala", "Rastrillo", "Soplete", "Broca", "Torno", "Tijeras", "Engranaje"
+  ],
+
+  "Series TV": [
+    "Breaking Bad", "Stranger Things", "The Crown", "Juego de Tronos", "The Mandalorian", "Friends",
+    "The Office", "Black Mirror", "Narcos", "Peaky Blinders", "Rick y Morty", "Los Simpsons", "Fargo", "Dexter", "The Witcher",
+    "Chernobyl", "Mindhunter", "Ozark", "Sherlock", "How I Met Your Mother"
   ]
 };
 categorias["Full combo"] = Object.values(categorias).flat();
+
 
 let palabraBase = "";
 let palabraCategoria = ""; // mantenemos categoría para pista
