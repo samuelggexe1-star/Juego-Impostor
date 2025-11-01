@@ -1,5 +1,4 @@
 const categorias = {
- const categorias = {
   "Full combo": [],
 
   "Personas": [
