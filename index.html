@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <title>Juego Impostor</title>
     <link rel="stylesheet" href="./style.css">
-
   </head>
     
   <body>
@@ -38,6 +37,17 @@
         <label style="margin-top:12px">Selecciona categorías (puedes elegir varias)</label>
         <div id="categorias-container" class="categorias-container"></div>
 
+        <!-- === Botón para seleccionar/deseleccionar todas las categorías (añadido) === -->
+        <div style="margin-top:8px;">
+          <button class="btn" id="btnToggleCategorias">Seleccionar todas</button>
+        </div>
+
+        <!-- === Separación añadida para separar categorías y configuración === -->
+        <div style="margin-top:20px"></div>
+
+        <!-- Botón configuración (añadido, mantiene estilo original) -->
+        <button class="btn" id="btnConfiguracion">Configuración</button>
+
         <div class="row" style="margin-top:12px">
           <label style="margin:0">Impostores:</label>
           <select id="cantidadImpostores" class="small" onchange="seleccionarImpostores(parseInt(this.value))">
@@ -67,7 +77,36 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- ----------------- Panel de Configuración (overlay) ----------------- -->
+  <div id="configPanel" class="config-panel hidden" aria-hidden="true">
+    <div class="config-content">
+      <h2>Configuración</h2>
+
+      <label class="config-option"><input type="checkbox" id="cfgRondasEspeciales"> Rondas especiales (pequeña probabilidad de que todos sean impostores o todos inocentes)</label>
+      <label class="config-option"><input type="checkbox" id="cfgPista"> Pista (al impostor se le indica la categoría de la palabra)</label>
+      <label class="config-option"><input type="checkbox" id="cfgPartidaTiempo"> Partida por tiempo (3 min tras ver todas las palabras)</label>
+
+      <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn" id="cerrarConfig">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ----------------- Panel de Cronómetro (overlay secundario) ----------------- -->
+  <div id="cronometroPanel" class="config-panel hidden" aria-hidden="true">
+    <div class="config-content">
+      <h2>Cronómetro</h2>
+      <div id="cronometro">03:00</div>
+      <div style="margin-top:12px; display:flex; gap:8px; justify-content:center;">
+        <button class="btn" id="iniciarCronometroBtn">Iniciar cronómetro</button>
+        <button class="btn hidden" id="reiniciarCronometroBtn">Reiniciar cronómetro</button>
+        <button class="btn hidden" id="nuevaRondaTiempoBtn">Nueva ronda</button>
+      </div>
+    </div>
+  </div>
+
+  <script  src="./script.js"></script>
+
 </body>
 </html>
     <script  src="./script.js"></script>
