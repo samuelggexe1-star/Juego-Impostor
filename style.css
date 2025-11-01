@@ -179,6 +179,13 @@ input[type="text"], select {
   font-weight: 700;
 }
 
+/* estilo opcional para el botón seleccionar/deseleccionar todas */
+#btnToggleCategorias {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 0.95rem;
+}
+
 @media (max-width: 900px) {
   .grid { grid-template-columns: 1fr; }
 }
@@ -210,4 +217,77 @@ input[type="text"], select {
 @keyframes girar {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+/* ---- Estilos para panel de configuración y cronómetro (mejor contraste) ---- */
+.config-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(2,6,23,0.55); /* overlay ligeramente más oscuro para destacar */
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+}
+
+.config-panel.hidden {
+  display: none;
+}
+
+.config-content {
+  width: 92%;
+  max-width: 420px;
+  padding: 18px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(6,22,33,0.35));
+  border: 1px solid rgba(34,193,195,0.12); /* borde con el color accent, translúcido */
+  box-shadow: 0 20px 40px rgba(2,6,23,0.6);
+  backdrop-filter: blur(8px) saturate(120%);
+  color: var(--text);
+}
+
+.config-content h2 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.config-option {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+  color: rgba(230,247,246,0.95);
+}
+
+.config-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.config-content .btn {
+  width: auto;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  border-radius: 10px;
+}
+
+#cronometro {
+  font-size: 2rem;
+  text-align: center;
+  margin-top: 6px;
+  color: var(--text);
+}
+
+@media (max-width: 420px) {
+  .config-content {
+    padding: 14px;
+    border-radius: 10px;
+  }
+  .config-option { font-size: 0.92rem; }
 }
