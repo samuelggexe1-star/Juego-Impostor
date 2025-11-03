@@ -2,7 +2,7 @@ const categorias = {
   "Full combo": [],
 
   "Personas": [
-    "Samuel", "Adriel", "Álvaro", "Pedro", "Mateo", "Alejandro", "Diego", "Fran", "David", "Daniel", "Ryan"
+    "Samuel", "Adriel", "Álvaro", "Pedro", "Mateo", "Alejandro", "Diego", "Fran", "David", "Daniel", "Ryan", "67"
   ],
 
   "Animales": [
