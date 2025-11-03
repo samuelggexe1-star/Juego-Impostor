@@ -116,6 +116,7 @@ let impostorIndices = [];
 let currentJugador = 0;
 let jugadores = [];
 let numImpostores = 1;
+let rondaActiva = false; // <-- NUEVO: indica si la ronda ya empezó para permitir ver roles
 
 // Configuración (por defecto desactivadas)
 const config = {
@@ -236,6 +237,9 @@ function iniciarCronometro() {
   tiempoRestante = 180; // 3 minutos
   actualizarCronometroUI();
 
+  // activar la ronda cuando se inicie el cronómetro (partidaPorTiempo)
+  rondaActiva = true;
+
   // mostrar/ocultar botones
   iniciarCronometroBtn.classList.add("hidden");
   reiniciarCronometroBtn.classList.remove("hidden");
@@ -268,6 +272,9 @@ function seleccionarImpostores(cantidad) {
 
 // función principal: nuevaRonda
 function nuevaRonda() {
+  // desactivar la posibilidad de ver roles hasta que todos los jugadores hayan pasado
+  rondaActiva = false;
+
   const input = document.getElementById("listaJugadores").value;
   jugadores = input.split(",").map(j => j.trim()).filter(j => j.length > 0);
 
@@ -348,10 +355,13 @@ function siguienteJugador() {
       // Mostrar panel con opción de iniciar cronómetro
       document.getElementById("output").innerHTML = `Todos han visto su rol. Pulsa para iniciar la partida por tiempo.`;
       document.getElementById("accion").innerHTML = `<button class="btn" onclick="abrirCronometroPanel()">Iniciar cronómetro</button>`;
+      // En este caso, la ronda se activará cuando el usuario pulse iniciarCronometro (iniciarCronometro() pondrá rondaActiva = true)
     } else {
       const jugadorAleatorio = jugadores[Math.floor(Math.random() * jugadores.length)];
       document.getElementById("output").innerHTML = `Todos han visto su rol, empieza <b>${jugadorAleatorio}</b>`;
       document.getElementById("accion").innerHTML = `<button class="btn" onclick="nuevaRonda()">Nueva ronda</button>`;
+      // activamos la ronda porque ya han visto sus roles
+      rondaActiva = true;
     }
   } else {
     document.getElementById("output").innerHTML = "Pasa el dispositivo a <b>" + jugadores[currentJugador] + "</b>";
@@ -380,10 +390,29 @@ function renderPlayersList() {
     div.innerHTML = `
       <div>${p}</div>
       <div class="player-actions">
-        <button onclick="alert('Rol: ${impostorIndices.includes(i) ? 'IMPOSTOR' : 'INOCENTE'}${impostorIndices.includes(i) ? '' : '\\nPalabra: ' + palabraBase}${(config.pista && impostorIndices.includes(i)) ? '\\nPista: categoría - ' + palabraCategoria : ''}')">Ver</button>
+        <button onclick="verBotonJugador(${i})">Ver</button>
       </div>`;
     container.appendChild(div);
   });
+}
+
+// NUEVA FUNCIÓN: controla el botón "Ver" en la lista de jugadores
+function verBotonJugador(i) {
+  if (!rondaActiva) {
+    alert("Espera a que todos vean su palabra para ver tu rol.");
+    return;
+  }
+
+  const esImpostor = impostorIndices.includes(i);
+  let mensaje = `Rol: ${esImpostor ? 'IMPOSTOR' : 'INOCENTE'}`;
+  if (!esImpostor) {
+    mensaje += `\nPalabra: ${palabraBase}`;
+  }
+  if (config.pista && esImpostor) {
+    mensaje += `\nPista: categoría - ${palabraCategoria}`;
+  }
+
+  alert(mensaje);
 }
 
 // Actualizar el texto del toggle al inicio (por si hay botones ya)
