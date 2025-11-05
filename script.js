@@ -122,7 +122,8 @@ let rondaActiva = false; // <-- NUEVO: indica si la ronda ya empezó para permit
 const config = {
   rondasEspeciales: false,
   pista: false,
-  partidaPorTiempo: false
+  partidaPorTiempo: false,
+  adminMode: false    // <-- NUEVO: modo Admin
 };
 
 // Probabilidades para rondas especiales (ajustables):
@@ -145,10 +146,10 @@ Object.keys(categorias).forEach(nombre => {
   btn.addEventListener("click", () => {
     if (seleccionadas.has(nombre)) {
       seleccionadas.delete(nombre);
-      btn.classList.remove("selected");
+      btn.classList.remove('selected');
     } else {
       seleccionadas.add(nombre);
-      btn.classList.add("selected");
+      btn.classList.add('selected');
     }
     // Actualizar texto del botón de toggle cuando el usuario cambia selección manualmente
     actualizarEstadoToggle();
@@ -164,6 +165,7 @@ const cerrarConfigBtn = document.getElementById("cerrarConfig");
 const cfgRondasEspeciales = document.getElementById("cfgRondasEspeciales");
 const cfgPista = document.getElementById("cfgPista");
 const cfgPartidaTiempo = document.getElementById("cfgPartidaTiempo");
+const cfgAdmin = document.getElementById("cfgAdmin");
 
 const cronometroPanel = document.getElementById("cronometroPanel");
 const cronometroDisplay = document.getElementById("cronometro");
@@ -211,6 +213,7 @@ btnConfiguracion.addEventListener("click", () => {
   document.getElementById("cfgRondasEspeciales").checked = config.rondasEspeciales;
   document.getElementById("cfgPista").checked = config.pista;
   document.getElementById("cfgPartidaTiempo").checked = config.partidaPorTiempo;
+  document.getElementById("cfgAdmin").checked = config.adminMode; // <-- sincroniza Admin
   configPanel.classList.remove("hidden");
   configPanel.setAttribute("aria-hidden", "false");
 });
@@ -219,8 +222,11 @@ cerrarConfigBtn.addEventListener("click", () => {
   config.rondasEspeciales = document.getElementById("cfgRondasEspeciales").checked;
   config.pista = document.getElementById("cfgPista").checked;
   config.partidaPorTiempo = document.getElementById("cfgPartidaTiempo").checked;
+  config.adminMode = document.getElementById("cfgAdmin").checked; // <-- guardamos Admin
   configPanel.classList.add("hidden");
   configPanel.setAttribute("aria-hidden", "true");
+  // sincronizar UI ahora que puede haber cambiado adminMode:
+  toggleAdminUI();
 });
 
 // cronómetro botones
@@ -283,45 +289,84 @@ function nuevaRonda() {
     return;
   }
 
+  // ---- Nuevas opciones: si estamos en modo Admin, pedimos palabra + pista opcional y quiénes son impostores
   let lista = [];
-  // Construimos una lista de pares {cat, palabra} para poder dar la pista de categoría
   let listaPares = [];
-  if (seleccionadas.size > 0) {
-    seleccionadas.forEach(cat => {
-      const arr = categorias[cat] || [];
-      arr.forEach(p => listaPares.push({cat, palabra: p}));
-      lista = lista.concat(arr);
-    });
-  } else {
-    alert("Selecciona al menos una categoría.");
-    return;
-  }
 
-  // ---- RONDAS ESPECIALES: posibilidad de todos impostores o todos inocentes
-  let todosImpostores = false;
-  let todosInocentes = false;
-  if (config.rondasEspeciales) {
-    const r = Math.random();
-    if (r < PROB_TODOS_IMPOSTORES) {
-      todosImpostores = true;
-    } else if (r < PROB_TODOS_IMPOSTORES + PROB_TODOS_INOCENTES) {
-      todosInocentes = true;
+  if (config.adminMode) {
+    // Pedir palabra que introducirá la persona externa
+    const adminWord = prompt("Modo Admin — persona externa: escribe la PALABRA que quieres usar para la ronda:");
+    if (!adminWord || adminWord.trim().length === 0) {
+      alert("No se ha proporcionado palabra. Se cancela la ronda.");
+      return;
     }
-  }
+    palabraBase = adminWord.trim();
 
-  // Elegir palabra: seleccionamos un par para poder mostrar la categoría si hace falta
-  const elegido = listaPares[Math.floor(Math.random() * listaPares.length)];
-  palabraBase = elegido.palabra;
-  palabraCategoria = elegido.cat;
+    // Pista opcional (puede quedar vacía)
+    const adminHint = prompt("Opcional: escribe una pista/categoría para el IMPOSTOR (déjalo vacío si no quieres pista):");
+    palabraCategoria = adminHint ? adminHint.trim() : "";
 
-  // Generar impostorIndices según casos
-  if (todosImpostores) {
-    impostorIndices = jugadores.map((_, i) => i); // todos
-  } else if (todosInocentes) {
-    impostorIndices = []; // ninguno
+    // Selección de impostores: pedir nombres separados por comas o 'aleatorio'
+    const impostorInput = prompt(`Admin: escribe los NOMBRES de los impostores separados por comas (ej: Samuel,Adriel), o escribe "aleatorio" para elegir ${numImpostores} impostor(es) al azar.`);
+    if (!impostorInput) {
+      // si no responde, elegimos aleatoriamente
+      const indices = jugadores.map((_, i) => i).sort(() => Math.random() - 0.5);
+      impostorIndices = indices.slice(0, Math.min(numImpostores, jugadores.length));
+    } else if (impostorInput.toLowerCase().trim() === 'aleatorio') {
+      const indices = jugadores.map((_, i) => i).sort(() => Math.random() - 0.5);
+      impostorIndices = indices.slice(0, Math.min(numImpostores, jugadores.length));
+    } else {
+      // convertir nombres a índices (match exacto ignorando mayúsculas)
+      const provided = impostorInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      const matched = provided.map(name => jugadores.findIndex(j => j.toLowerCase() === name.toLowerCase())).filter(i => i >= 0);
+      if (matched.length === 0) {
+        alert("No se encontraron coincidencias entre los jugadores. Se elegirán impostores aleatoriamente.");
+        const indices = jugadores.map((_, i) => i).sort(() => Math.random() - 0.5);
+        impostorIndices = indices.slice(0, Math.min(numImpostores, jugadores.length));
+      } else {
+        impostorIndices = matched.slice(0, Math.min(numImpostores, matched.length));
+      }
+    }
+
   } else {
-    const indices = jugadores.map((_, i) => i).sort(() => Math.random() - 0.5);
-    impostorIndices = indices.slice(0, Math.min(numImpostores, jugadores.length));
+    // comportamiento habitual por categorías (sin Admin)
+    if (seleccionadas.size > 0) {
+      seleccionadas.forEach(cat => {
+        const arr = categorias[cat] || [];
+        arr.forEach(p => listaPares.push({cat, palabra: p}));
+        lista = lista.concat(arr);
+      });
+    } else {
+      alert("Selecciona al menos una categoría.");
+      return;
+    }
+
+    // ---- RONDAS ESPECIALES: posibilidad de todos impostores o todos inocentes
+    let todosImpostores = false;
+    let todosInocentes = false;
+    if (config.rondasEspeciales) {
+      const r = Math.random();
+      if (r < PROB_TODOS_IMPOSTORES) {
+        todosImpostores = true;
+      } else if (r < PROB_TODOS_IMPOSTORES + PROB_TODOS_INOCENTES) {
+        todosInocentes = true;
+      }
+    }
+
+    // Elegir palabra: seleccionamos un par para poder mostrar la categoría si hace falta
+    const elegido = listaPares[Math.floor(Math.random() * listaPares.length)];
+    palabraBase = elegido.palabra;
+    palabraCategoria = elegido.cat;
+
+    // Generar impostorIndices según casos
+    if (todosImpostores) {
+      impostorIndices = jugadores.map((_, i) => i); // todos
+    } else if (todosInocentes) {
+      impostorIndices = []; // ninguno
+    } else {
+      const indices = jugadores.map((_, i) => i).sort(() => Math.random() - 0.5);
+      impostorIndices = indices.slice(0, Math.min(numImpostores, jugadores.length));
+    }
   }
 
   currentJugador = 0;
@@ -415,6 +460,36 @@ function verBotonJugador(i) {
   alert(mensaje);
 }
 
+// ---- NUEVAS FUNCIONES / UI para Admin ----
+
+// función para ocultar/mostrar UI de categorías cuando está Admin
+function toggleAdminUI() {
+  // preferimos el estado guardado en config.adminMode, pero si no existe el checkbox aún, comprobamos el DOM
+  const adminChecked = (cfgAdmin && cfgAdmin.checked) || config.adminMode;
+  if (adminChecked) {
+    // ocultar categorías y desactivar botón toggle
+    contenedor.style.display = 'none';
+    btnToggleCategorias.disabled = true;
+    btnToggleCategorias.style.opacity = '0.6';
+  } else {
+    contenedor.style.display = 'flex';
+    btnToggleCategorias.disabled = false;
+    btnToggleCategorias.style.opacity = '1';
+  }
+  // actualizar texto del toggle por si acaso
+  actualizarEstadoToggle();
+}
+
+// Listener inmediato para reaccionar a cambios en la casilla Admin dentro del panel
+if (cfgAdmin) {
+  cfgAdmin.addEventListener('change', () => {
+    // no guardamos aún hasta cerrar, pero actualizamos la UI en vivo
+    toggleAdminUI();
+  });
+}
+
+// llamar una vez al inicio para coherencia
+toggleAdminUI();
+
 // Actualizar el texto del toggle al inicio (por si hay botones ya)
 actualizarEstadoToggle();
-
