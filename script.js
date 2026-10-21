@@ -427,6 +427,9 @@ function rondaBase() {
     actual: 0,
     numDebate: 1,
     acertantes: new Set(), // quienes votaron bien en voto secreto
+    respuestas: {},        // modo Preguntas: respuesta escrita de cada jugador
+    respuestasReveladas: false,
+    vistoActual: false,
     expulsados: []
   };
 }
@@ -533,7 +536,16 @@ function mostrarTurnoReparto() {
   $("#cartaFrente").classList.toggle("impostor", sabeQueEsImpostor(i));
   $("#cartaRol").classList.remove("girada");
   $("#btnSiguienteReparto").disabled = true;
-  $("#btnSiguienteReparto").textContent = i === ronda.jugadores.length - 1 ? "Ya lo he visto: ¡a jugar! ✔" : "Ya lo he visto ✔";
+  ronda.vistoActual = false;
+  const ultimo = i === ronda.jugadores.length - 1;
+  if (ronda.modo === "preguntas") {
+    $("#inputRespuesta").value = "";
+    $("#zonaRespuesta").classList.add("oculto");
+    $("#btnSiguienteReparto").textContent = ultimo ? "Guardar respuesta: ¡a jugar! ✔" : "Guardar respuesta ✔";
+  } else {
+    $("#zonaRespuesta").classList.add("oculto");
+    $("#btnSiguienteReparto").textContent = ultimo ? "Ya lo he visto: ¡a jugar! ✔" : "Ya lo he visto ✔";
+  }
 }
 
 // En Undercover y Preguntas el impostor no sabe que lo es
@@ -549,7 +561,7 @@ function contenidoCarta(i) {
     const pregunta = esImpostor ? r.gemela : r.palabra;
     return `<span class="rol">Tu pregunta</span>
       <span class="pregunta">${esc(pregunta)}</span>
-      <span class="extra">Piensa tu respuesta y no la digas todavía 🤫</span>`;
+      <span class="extra">Escribe tu respuesta abajo 🤫</span>`;
   }
 
   if (r.modo === "undercover") {
@@ -604,8 +616,23 @@ function prepararCarta(carta, alVer) {
   carta.addEventListener("blur", ocultar);
 }
 
+function puedeSeguirReparto() {
+  if (!ronda.vistoActual) return false;
+  if (ronda.modo === "preguntas") return $("#inputRespuesta").value.trim().length > 0;
+  return true;
+}
+
+$("#inputRespuesta").addEventListener("input", () => {
+  $("#btnSiguienteReparto").disabled = !puedeSeguirReparto();
+});
+$("#inputRespuesta").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && puedeSeguirReparto()) $("#btnSiguienteReparto").click();
+});
+
 prepararCarta($("#cartaRol"), () => {
-  $("#btnSiguienteReparto").disabled = false;
+  ronda.vistoActual = true;
+  if (ronda.modo === "preguntas") $("#zonaRespuesta").classList.remove("oculto");
+  $("#btnSiguienteReparto").disabled = !puedeSeguirReparto();
   if (sabeQueEsImpostor(ronda.actual)) {
     vibrar([60, 40, 60]);
     pitido(220, 0.25);
@@ -616,6 +643,12 @@ prepararCarta($("#cartaRol"), () => {
 });
 
 $("#btnSiguienteReparto").addEventListener("click", () => {
+  if (!puedeSeguirReparto()) return;
+  if (ronda.modo === "preguntas") {
+    ronda.respuestas[ronda.actual] = $("#inputRespuesta").value.trim();
+    $("#inputRespuesta").value = "";
+    $("#inputRespuesta").blur();
+  }
   ronda.actual++;
   if (ronda.actual >= ronda.jugadores.length) {
     empezarDebate();
@@ -664,11 +697,7 @@ function empezarDebate() {
 
   const instr = $("#debateInstruccion");
   if (ronda.modo === "preguntas") {
-    instr.innerHTML = `A la de 3, decid todos vuestra respuesta a la vez. Luego leed la pregunta de verdad y debatid quién no encaja.
-      <br><button class="btn btn-secundario" id="btnLeerPregunta" style="margin-top:10px">📖 Leer la pregunta de verdad</button>`;
-    $("#btnLeerPregunta").addEventListener("click", (e) => {
-      e.target.outerHTML = `<b class="resalte">"${esc(ronda.palabra)}"</b>`;
-    });
+    pintarDebatePreguntas(instr);
   } else if (ronda.numDebate === 1) {
     instr.textContent = "Por turnos, cada uno dice UNA palabra relacionada con la suya. Haced las vueltas que queráis y luego votad.";
   } else {
@@ -679,6 +708,38 @@ function empezarDebate() {
   prepararCrono();
   irA("pDebate");
   melodia([[523], [659], [784]]);
+}
+
+// Modo Preguntas: primero se revelan todas las respuestas a la vez y luego la pregunta
+function htmlRespuestas(marcarImpostor = false) {
+  return ronda.jugadores.map((nombre, i) => {
+    const clases = ["respuesta"];
+    if (!ronda.vivos.has(i)) clases.push("fuera");
+    if (marcarImpostor && ronda.impostores.has(i)) clases.push("es-impostor");
+    return `<div class="${clases.join(" ")}" style="animation-delay:${i * 0.12}s">
+      <b>${esc(nombre)}</b><span>${esc(ronda.respuestas[i] || "—")}</span></div>`;
+  }).join("");
+}
+
+function pintarDebatePreguntas(instr) {
+  const preguntaHtml = `<p>La pregunta de verdad era:<br><b class="resalte">"${esc(ronda.palabra)}"</b></p>`;
+  if (ronda.respuestasReveladas) {
+    instr.innerHTML = `<div class="respuestas">${htmlRespuestas()}</div>${preguntaHtml}
+      ${ronda.numDebate > 1 ? "<p>El impostor sigue entre vosotros. ¿Quién no encaja?</p>" : ""}`;
+    return;
+  }
+  instr.innerHTML = `Ya están todas las respuestas guardadas. Reveladlas a la vez y luego leed la pregunta de verdad.
+    <br><button class="btn" id="btnRevelarRespuestas" style="margin-top:10px">📢 Revelar respuestas</button>`;
+  $("#btnRevelarRespuestas").addEventListener("click", () => {
+    ronda.respuestasReveladas = true;
+    melodia([[523], [659]]);
+    instr.innerHTML = `<div class="respuestas">${htmlRespuestas()}</div>
+      <button class="btn btn-secundario" id="btnLeerPregunta" style="margin-top:12px">📖 Leer la pregunta de verdad</button>`;
+    $("#btnLeerPregunta").addEventListener("click", () => {
+      pintarDebatePreguntas(instr);
+      pitido(784, 0.15);
+    });
+  });
 }
 
 /* ---------------- Cronómetro ---------------- */
@@ -1066,6 +1127,14 @@ function terminar(resultado, extra = {}) {
   $("#finalEtiquetaGemela").textContent = esPregunta ? "La pregunta del impostor era" : "El undercover tenía";
   $("#finalGemela").textContent = r.gemela;
   $("#finalImpostores").textContent = r.trampa === "ninguno" ? "Nadie 🤡" : r.trampa === "todos" ? "Todos 😂" : listaNombres(nombresImpostores);
+  const conRespuestas = esPregunta && Object.keys(r.respuestas).length > 0;
+  $("#finalRespuestasCaja").classList.toggle("oculto", !conRespuestas);
+  if (conRespuestas) {
+    const vivosAntes = r.vivos;
+    r.vivos = new Set(r.jugadores.map((_, i) => i)); // en el final no tachamos a nadie
+    $("#finalRespuestas").innerHTML = htmlRespuestas(true);
+    r.vivos = vivosAntes;
+  }
 
   pintarMarcador($("#finalMarcador"), delta);
   irA("pFinal");

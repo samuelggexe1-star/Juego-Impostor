@@ -248,6 +248,23 @@ textarea { resize: vertical; }
 .carta-frente .extra b { color: var(--text); }
 .carta-frente .pregunta { font-size: 1.25rem; font-weight: 700; line-height: 1.3; }
 
+/* ---------- Respuestas (modo Preguntas) ---------- */
+.zona-respuesta { text-align: left; margin-bottom: 14px; }
+.zona-respuesta label { color: var(--text); }
+.zona-respuesta input { font-size: 1.1rem; }
+.respuestas { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; text-align: left; }
+.respuesta {
+  display: flex; gap: 10px; align-items: baseline; padding: 10px 12px; border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--borde); animation: pop .35s ease both;
+}
+.respuesta b { min-width: 72px; color: var(--suave); font-weight: 600; font-size: 0.85rem; }
+.respuesta span { font-size: 1.05rem; font-weight: 700; color: var(--text); word-break: break-word; }
+.respuesta.fuera { opacity: .45; text-decoration: line-through; }
+.respuesta.es-impostor { border-color: var(--rojo2); background: rgba(244, 63, 94, 0.14); }
+.respuesta.es-impostor span { color: var(--rojo2); }
+.revelacion .respuestas b { font-size: 0.85rem; }
+.revelacion .respuestas .respuesta { background: rgba(255, 255, 255, 0.04); }
+
 /* ---------- Debate ---------- */
 .titulo-debate { font-size: 1.5rem; margin: 6px 0; }
 .resalte { color: var(--amarillo); }
@@ -294,7 +311,7 @@ textarea { resize: vertical; }
 .final.gana-impostor { border-color: var(--rojo2); background: rgba(244, 63, 94, 0.1); }
 .final.gana-inocentes { border-color: var(--accent2); background: rgba(110, 231, 183, 0.08); }
 .revelacion { display: grid; gap: 8px; margin-top: 14px; }
-.revelacion div { background: rgba(0, 0, 0, 0.2); border-radius: 10px; padding: 10px; }
+.revelacion > div { background: rgba(0, 0, 0, 0.2); border-radius: 10px; padding: 10px; }
 .revelacion small { display: block; color: var(--suave); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; }
 .revelacion b { font-size: 1.15rem; }
 

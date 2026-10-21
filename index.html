@@ -131,6 +131,11 @@
           <div class="carta-frente" id="cartaFrente"></div>
         </div>
 
+        <div id="zonaRespuesta" class="zona-respuesta oculto">
+          <label for="inputRespuesta">✍️ Escribe tu respuesta. Nadie la verá hasta que las reveléis todas a la vez.</label>
+          <input id="inputRespuesta" type="text" maxlength="80" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Tu respuesta…" />
+        </div>
+
         <button class="btn btn-grande ancho" id="btnSiguienteReparto" disabled>Ya lo he visto ✔</button>
       </div>
       <button class="texto-btn peligro" id="btnCancelarRonda">Cancelar ronda</button>
@@ -221,6 +226,7 @@
           <div><small id="finalEtiquetaPalabra">La palabra era</small><b id="finalPalabra">—</b></div>
           <div id="finalGemelaCaja"><small id="finalEtiquetaGemela">El impostor tenía</small><b id="finalGemela">—</b></div>
           <div><small>Impostor(es)</small><b id="finalImpostores">—</b></div>
+          <div id="finalRespuestasCaja" class="oculto"><small>Respuestas</small><div id="finalRespuestas" class="respuestas"></div></div>
         </div>
       </div>
       <div class="panel">
@@ -350,7 +356,7 @@
       <h3>Modos</h3>
       <p><b>🕵️ Clásico:</b> el impostor sabe que lo es. Se le puede dar una pista en Ajustes.</p>
       <p><b>🎭 Undercover:</b> el impostor tiene una palabra parecida (Pizza / Lasaña) y ni siquiera sabe que es el impostor.</p>
-      <p><b>💬 Preguntas:</b> todos responden en voz alta a una pregunta. El impostor tiene otra parecida y su respuesta "no encaja". Con las picantes 🌶️ activadas, prepárate para bastadas.</p>
+      <p><b>💬 Preguntas:</b> cada uno escribe su respuesta en secreto al ver su pregunta, así nadie copia ni cambia. Luego se revelan todas a la vez. El impostor tiene otra parecida y su respuesta "no encaja". Con las picantes 🌶️ activadas, prepárate para bastadas.</p>
       <p><b>👥 Vosotros:</b> categoría con frases sobre los jugadores de la partida ("El móvil de…", "… a las 3 de la mañana").</p>
       <p><b>👑 Admin:</b> alguien que no juega elige la palabra y los impostores.</p>
       <h3>Rondas trampa</h3>
