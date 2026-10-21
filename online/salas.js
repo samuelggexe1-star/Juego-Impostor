@@ -18,6 +18,19 @@ export const MIN_JUGADORES = 3;
 export const MAX_JUGADORES = 15;
 /** Una sala sin nadie conectado muere pasado este rato. */
 export const CADUCA_MS = 2 * 60 * 60 * 1000;
+/**
+ * Una sala publica vacia vuelve a empezar de cero pasado este rato. No es
+ * al instante porque al bloquear el movil se corta la conexion: si todos
+ * bloquean a la vez, no se puede borrar la partida.
+ */
+export const REINICIO_PUBLICA_MS = 3 * 60 * 1000;
+
+/** Las salas publicas que hay siempre. El codigo es su nombre en letras. */
+export const SALAS_PUBLICAS = [
+  { codigo: 'UNO', nombre: 'Sala 1' },
+  { codigo: 'DOS', nombre: 'Sala 2' },
+  { codigo: 'TRES', nombre: 'Sala 3' }
+];
 
 /** Cuanto se queda en pantalla cada cosa antes de seguir sola. */
 export const DURACION = {
@@ -548,6 +561,8 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
     repasarAnfitrion(sala);
     const v = {
       codigo: sala.codigo,
+      nombre: sala.nombre || null,
+      publica: !!sala.publica,
       fase: sala.fase,
       anfitrion: sala.anfitrion,
       // La foto no va aqui (se mandaria en cada cambio): solo su version, y el
@@ -630,25 +645,37 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
   const faseEs = (sala, ...fases) => fases.includes(sala.fase);
   const participanteVivo = (sala, id) => sala.ronda && sala.ronda.participantes.includes(id) && sala.ronda.vivos.has(id);
 
+  const salaNueva = (codigo, anfitrion) => ({
+    codigo,
+    anfitrion,
+    jugadores: [],
+    ajustes: { ...AJUSTES_DEFECTO, categorias: [...AJUSTES_DEFECTO.categorias] },
+    fase: 'sala',
+    ronda: null,
+    numRonda: 0,
+    puntos: {},
+    usadas: new Set(),
+    fin: null,
+    tocada: ahora()
+  });
+
+  /** Deja una sala publica como recien abierta. */
+  const vaciar = (sala) => {
+    const limpia = salaNueva(sala.codigo, null);
+    Object.assign(sala, limpia, { publica: true, nombre: sala.nombre });
+  };
+
+  for (const { codigo, nombre } of SALAS_PUBLICAS) {
+    salas.set(codigo, { ...salaNueva(codigo, null), publica: true, nombre });
+  }
+
   return {
     salas,
     vista,
 
     crear(nombre, id, color) {
       const codigo = codigoLibre();
-      const sala = {
-        codigo,
-        anfitrion: id,
-        jugadores: [],
-        ajustes: { ...AJUSTES_DEFECTO, categorias: [...AJUSTES_DEFECTO.categorias] },
-        fase: 'sala',
-        ronda: null,
-        numRonda: 0,
-        puntos: {},
-        usadas: new Set(),
-        fin: null,
-        tocada: ahora()
-      };
+      const sala = salaNueva(codigo, id);
       sala.jugadores.push({ id, nombre: limpiarNombre(nombre), color: colorLibre(sala, color), conectado: true, foto: null });
       salas.set(codigo, sala);
       return sala;
@@ -664,6 +691,8 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
         if (nombre) ya.nombre = nombreLibre(sala, limpiarNombre(nombre), id);
         return { sala };
       }
+      // En la sala de espera, los que se fueron ya no guardan sitio ni nombre
+      if (sala.fase === 'sala') sala.jugadores = sala.jugadores.filter((j) => j.conectado);
       if (sala.jugadores.length >= MAX_JUGADORES) return { error: 'La sala está llena' };
       sala.jugadores.push({
         id,
@@ -681,6 +710,7 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       if (!sala) return null;
       const j = jugadorDe(sala, id);
       if (j) j.conectado = false;
+      tocar(sala);
       repasarAnfitrion(sala);
       // Si era el ultimo que faltaba, la partida no se queda esperandole.
       if (sala.ronda) { comprobarReparto(sala); comprobarVotos(sala); }
@@ -891,9 +921,37 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       let n = 0;
       for (const [codigo, sala] of salas) {
         const alguien = sala.jugadores.some((j) => j.conectado);
-        if (!alguien && t - sala.tocada > CADUCA_MS) { salas.delete(codigo); n++; }
+        if (alguien) continue;
+        if (sala.publica) {
+          // Las publicas no se borran: se vacian para el siguiente grupo
+          if (t - sala.tocada > REINICIO_PUBLICA_MS && (sala.jugadores.length || sala.ronda)) {
+            vaciar(sala);
+            n++;
+          }
+        } else if (t - sala.tocada > CADUCA_MS) {
+          salas.delete(codigo);
+          n++;
+        }
       }
       return n;
+    },
+
+    /** Lo que se ve en la entrada: las salas publicas y cuanta gente hay. */
+    publicas() {
+      return SALAS_PUBLICAS.map(({ codigo }) => {
+        const sala = salas.get(codigo);
+        const dentro = sala.jugadores.filter((j) => j.conectado);
+        return {
+          codigo,
+          nombre: sala.nombre,
+          jugadores: dentro.length,
+          max: MAX_JUGADORES,
+          fase: sala.fase,
+          modo: sala.ajustes.modo,
+          // Solo nombre y color: para ver de un vistazo si estan tus amigos
+          quienes: dentro.slice(0, 8).map((j) => ({ nombre: j.nombre, color: j.color }))
+        };
+      });
     }
   };
 }

@@ -4,7 +4,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { crearSalas, aciertaPalabra, limpiarAjustes, DURACION, MIN_JUGADORES } from '../online/salas.js';
+import { crearSalas, aciertaPalabra, limpiarAjustes, DURACION, MIN_JUGADORES, REINICIO_PUBLICA_MS, CADUCA_MS } from '../online/salas.js';
 import { cargarBanco } from '../online/banco.js';
 
 const banco = cargarBanco();
@@ -15,7 +15,7 @@ function conReloj(semilla = 7) {
   let n = semilla;
   const azar = () => ((n = (n * 1103515245 + 12345) % 2147483648) / 2147483648);
   const S = crearSalas({ ahora: () => t, azar, banco });
-  return { S, avanzar: (ms) => { t += ms; return S.tick(); } };
+  return { S, avanzar: (ms) => { t += ms; return S.tick(); }, mover: (ms) => { t += ms; } };
 }
 
 /** Una sala con cinco jugadores ya repartida. */
@@ -428,4 +428,52 @@ test('el anfitrion puede quitarle la foto a alguien', () => {
   assert.ok(S.quitarFoto(sala.codigo, 'b', 'b').error, 'no es anfitrion');
   S.quitarFoto(sala.codigo, 'a', 'b');
   assert.equal(S.fotoDe(sala.codigo, 'b'), null);
+});
+
+// ------------------------------------------------------------------ salas publicas
+
+test('siempre hay tres salas publicas y salen en la lista', () => {
+  const { S } = conReloj();
+  const lista = S.publicas();
+  assert.deepEqual(lista.map((p) => p.nombre), ['Sala 1', 'Sala 2', 'Sala 3']);
+  assert.ok(lista.every((p) => p.jugadores === 0 && p.fase === 'sala'));
+});
+
+test('en una sala publica manda el primero que entra', () => {
+  const { S } = conReloj();
+  S.entrar('UNO', 'a', 'Ana');
+  S.entrar('uno', 'b', 'Bea');
+  const sala = S.salas.get('UNO');
+  assert.equal(S.vista(sala, 'b').anfitrion, 'a');
+  assert.equal(S.publicas()[0].jugadores, 2);
+  assert.deepEqual(S.publicas()[0].quienes.map((q) => q.nombre), ['Ana', 'Bea']);
+});
+
+test('una sala publica vacia vuelve a empezar, pero no se borra', () => {
+  const { S, mover } = conReloj();
+  ['a', 'b', 'c'].forEach((id) => S.entrar('DOS', id, id.toUpperCase()));
+  S.empezar('DOS', 'a');
+  const sala = S.salas.get('DOS');
+  assert.equal(sala.fase, 'reparto');
+  ['a', 'b', 'c'].forEach((id) => S.salir('DOS', id));
+  // Si todos bloquean el movil un momento, la partida sigue ahi
+  mover(60_000);
+  S.limpiar();
+  assert.equal(sala.fase, 'reparto');
+  mover(REINICIO_PUBLICA_MS);
+  S.limpiar();
+  assert.equal(sala.fase, 'sala');
+  assert.equal(sala.jugadores.length, 0);
+  mover(CADUCA_MS * 2);
+  S.limpiar();
+  assert.ok(S.salas.has('DOS'), 'se ha borrado una sala publica');
+});
+
+test('las salas privadas siguen caducando', () => {
+  const { S, mover } = conReloj();
+  const sala = S.crear('Ana', 'a');
+  S.salir(sala.codigo, 'a');
+  mover(CADUCA_MS + 1);
+  S.limpiar();
+  assert.ok(!S.salas.has(sala.codigo));
 });

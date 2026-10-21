@@ -39,8 +39,14 @@
     <section id="pEntrada" class="pantalla">
       <div class="panel tarjeta-perfil" id="tarjetaPerfil"></div>
       <button class="btn btn-secundario ancho oculto" id="btnVolverSalaUltima"></button>
+
       <div class="panel">
-        <h2>Unirse a una sala</h2>
+        <div class="panel-titulo"><h2>🌍 Salas públicas</h2><span class="nota">Entra quien quiera</span></div>
+        <div id="listaPublicas" class="lista-publicas"><p class="nota">Cargando…</p></div>
+      </div>
+
+      <div class="panel">
+        <h2>🔒 Sala privada con código</h2>
         <form id="formUnirse" class="fila">
           <input id="codigoUnirse" type="text" maxlength="4" autocomplete="off" autocapitalize="characters"
                  placeholder="CÓDIGO" class="input-codigo" />
@@ -48,7 +54,8 @@
         </form>
       </div>
       <div class="separador"><span>o</span></div>
-      <button class="btn btn-grande ancho" id="btnCrear">➕ Crear sala nueva</button>
+      <button class="btn btn-grande ancho" id="btnCrear">➕ Crear sala privada</button>
+      <p class="nota centrado">Te da un código para pasárselo a tus amigos.</p>
       <div class="fila-centrada">
         <a class="texto-btn" href="index.html">📱 Jugar en un solo móvil</a>
       </div>
@@ -57,7 +64,7 @@
     <!-- ============ SALA DE ESPERA ============ -->
     <section id="pSala" class="pantalla">
       <div class="panel centrado">
-        <p class="pasa">Código de la sala</p>
+        <p class="pasa" id="tituloSala">Código de la sala</p>
         <div class="codigo-grande" id="codigoSala">----</div>
         <div class="fila fila-centrada">
           <button class="btn btn-secundario" id="btnCompartir">🔗 Invitar</button>

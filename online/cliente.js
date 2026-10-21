@@ -117,6 +117,7 @@ async function arrancar() {
     return;
   }
   irA('pEntrada');
+  pintarPublicas();
   if (!perfil.nombre) { abrirPerfil(true); return; }
   // Recargar la pagina en plena partida te devuelve a tu sitio
   if (deEnlace) unirse(deEnlace);
@@ -147,7 +148,7 @@ async function crear() {
 async function unirse(codigo) {
   if (!tengoPerfil()) return;
   const c = String(codigo || '').toUpperCase().replace(/[^A-Z]/g, '');
-  if (c.length !== 4) { aviso('El código tiene 4 letras'); return; }
+  if (c.length < 3) { aviso('El código tiene 4 letras'); return; }
   try {
     await enviar({ tipo: 'entrar', sala: c, nombre: perfil.nombre, color: perfil.color });
     await subirFoto(c);
@@ -185,6 +186,7 @@ function salirDeSala() {
   history.replaceState(null, '', location.pathname);
   pintarPerfil();
   irA('pEntrada');
+  pintarPublicas();
 }
 
 async function mandar(tipo, datos = {}) {
@@ -195,6 +197,39 @@ async function mandar(tipo, datos = {}) {
     return null;
   }
 }
+
+// ------------------------------------------------------------------ salas publicas
+
+const NOMBRES_MODO = { clasico: '🕵️ Clásico', undercover: '🎭 Undercover', preguntas: '💬 Preguntas' };
+
+async function pintarPublicas() {
+  if (codigoActual || !$('#pEntrada').classList.contains('activa')) return;
+  let lista;
+  try {
+    const r = await fetch('/api/salas', { cache: 'no-store' });
+    lista = (await r.json()).salas;
+  } catch {
+    $('#listaPublicas').innerHTML = '<p class="nota">No se han podido cargar las salas.</p>';
+    return;
+  }
+  $('#listaPublicas').innerHTML = lista.map((s) => {
+    const estadoSala = s.jugadores === 0 ? 'Vacía'
+      : s.fase === 'sala' ? 'Esperando para empezar' : 'Jugando · entrarás en la siguiente ronda';
+    const llena = s.jugadores >= s.max;
+    const caras = s.quienes.map((q) => `<span class="trip mini" style="--c:${COLORES[q.color] || '#888'}" title="${esc(q.nombre)}"><i class="mochila"></i><i class="cuerpo"></i><i class="visor"></i></span>`).join('');
+    return `<div class="sala-publica ${s.fase !== 'sala' ? 'jugando' : ''}">
+      <div class="sala-publica-info">
+        <b>${esc(s.nombre)}</b>
+        <small>${s.jugadores}/${s.max} · ${esc(estadoSala)}${s.jugadores ? ` · ${NOMBRES_MODO[s.modo] || ''}` : ''}</small>
+        ${caras ? `<span class="caras">${caras}</span>` : ''}
+        ${s.quienes.length ? `<small class="nombres">${s.quienes.map((q) => esc(q.nombre)).join(', ')}</small>` : ''}
+      </div>
+      <button class="btn" data-publica="${esc(s.codigo)}" ${llena ? 'disabled' : ''}>${llena ? 'Llena' : 'Entrar'}</button>
+    </div>`;
+  }).join('');
+  $$('[data-publica]').forEach((b) => b.addEventListener('click', () => unirse(b.dataset.publica)));
+}
+setInterval(pintarPublicas, 4000);
 
 // ------------------------------------------------------------------ perfil
 
@@ -428,6 +463,8 @@ function pintarSala() {
   const v = estado;
   const yo = miId();
   $('#codigoSala').textContent = v.codigo;
+  $('#tituloSala').textContent = v.publica ? `${v.nombre} · sala pública` : 'Código de la sala';
+  $('#btnCopiarCodigo').classList.toggle('oculto', v.publica);
   $('#numSala').textContent = v.jugadores.filter((j) => j.conectado).length;
 
   $('#listaSala').innerHTML = v.jugadores.map((j) => `

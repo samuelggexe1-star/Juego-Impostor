@@ -194,6 +194,7 @@ const servidor = http.createServer((req, res) => {
     return json(res, 200, { ok: true, juego: 'impostor', salas: Salas.salas.size });
   }
   if (url.pathname === '/api/eventos' && req.method === 'GET') return abrirEventos(req, res, url);
+  if (url.pathname === '/api/salas' && req.method === 'GET') return json(res, 200, { salas: Salas.publicas() });
   if (url.pathname === '/api/enviar' && req.method === 'POST') return recibir(req, res);
   if (url.pathname === '/api/foto' && req.method === 'GET') {
     const foto = Salas.fotoDe(codigoDe(url.searchParams.get('sala')), id(url.searchParams.get('id')));
@@ -230,7 +231,7 @@ setInterval(() => {
 setInterval(() => {
   const n = Salas.limpiar();
   if (n) console.log(`Se han tirado ${n} salas paradas`);
-}, 10 * 60 * 1000).unref();
+}, 60 * 1000).unref();
 
 servidor.listen(PUERTO, HOST, () => {
   console.log(`Impostor en marcha: http://localhost:${PUERTO}`);

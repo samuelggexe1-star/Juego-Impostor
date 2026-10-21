@@ -40,7 +40,8 @@ Juego de fiesta para jugar con un solo móvil pasándolo de mano en mano. Todos 
 Montado igual que el billar: un servidor Node sin dependencias, salas con código de 4 letras y SSE + POST (funciona en la wifi del instituto, que bloquea los websockets).
 
 - **Perfil en cada móvil**: nombre, foto y color favorito. Se guarda en el móvil, así que al volver otro día sale arriba a la derecha y se puede editar. También guarda tus estadísticas (partidas, victorias, veces de impostor) y te ofrece volver a tu última sala.
-- **Sala de espera**: el anfitrión crea la sala, los demás entran con el código o con el enlace de invitación. Cada uno tiene su color de tripulante.
+- **Salas públicas**: al entrar salen siempre *Sala 1*, *Sala 2* y *Sala 3*, con cuánta gente hay, quiénes son y si están jugando. Entra quien quiera; manda el primero que llega. Si llegas con la partida empezada, entras en la siguiente ronda. Cuando se quedan vacías un rato, vuelven a empezar de cero.
+- **Salas privadas**: el anfitrión crea una y comparte el código de 4 letras o el enlace de invitación.
 - **Cada uno ve su carta en su móvil.** El servidor solo le manda a cada móvil SU carta, así que nadie puede mirar quién es el impostor.
 - **Debate y votación a la vez**: hay un tiempo (1 a 10 min) para hablar y votar. Cuando se acaba, sale el más votado (si gana «saltar», no sale nadie). Se puede cambiar el voto hasta el final, o desactivarlo.
 - **Varios expulsados por turno** (ajuste): si son 2, cada uno vota a 2 personas y salen los 2 más votados. Si hay empate en el último hueco, no sale ninguno de los empatados.
