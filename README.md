@@ -19,7 +19,10 @@ Juego de fiesta para jugar con un solo móvil pasándolo de mano en mano. Todos 
 
 ## Funciones
 
-- 40 categorías y más de 1.500 palabras, cada una con su "palabra gemela".
+- 42 categorías y más de 1.600 palabras, cada una con su "palabra gemela".
+- Categoría **Vosotros 👥**: frases con los jugadores de la partida ("El móvil de Mateo", "Diego a las 3 de la mañana").
+- Categoría **Cosas raras 🤢** para echar unas risas.
+- Modo Preguntas con preguntas **picantes 🌶️** y preguntas **sobre los jugadores** (se activan en Ajustes).
 - Categorías propias creadas desde la app.
 - Número de impostores automático según jugadores, o manual.
 - Rondas trampa: a veces no hay impostor o lo son todos (probabilidad ajustable).

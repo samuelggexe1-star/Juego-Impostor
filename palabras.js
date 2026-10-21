@@ -13,6 +13,49 @@
    ========================================================= */
 
 const CATEGORIAS = {
+  "Vosotros": { icono: "👥", jugadores: true, palabras: [
+    "{J}", "El móvil de {J}", "La habitación de {J}", "La madre de {J}", "El historial de Google de {J}",
+    "{J} bailando reguetón", "{J} en un examen", "{J} recién levantado", "{J} enfadado", "{J} ligando",
+    "{J} en la playa", "La mochila de {J}", "Los pies de {J}", "La risa de {J}", "{J} conduciendo",
+    "{J} cantando en la ducha", "{J} de mayor", "{J} de bebé", "Los calcetines de {J}", "El último audio de {J}",
+    "{J} en el gimnasio", "El peinado de {J}", "{J} jugando al FIFA", "{J} pidiendo en el McDonald's",
+    "La boda de {J}", "{J} llorando con una peli", "{J} a las 3 de la mañana", "Las zapatillas de {J}",
+    "{J} en un apocalipsis zombi", "{J} copiando en un examen", "{J} perdiendo al Clash Royale",
+    "La galería de fotos de {J}", "{J} con 80 años", "{J} hablando con la profe", "El TikTok de {J}",
+    "{J} intentando cocinar", "{J} en una discoteca", "{J} con miedo", "La nevera de {J}", "{J} ganando la lotería"
+  ]},
+
+  "Cosas raras": { icono: "🤢", palabras: [
+    "Pedo en el ascensor / Eructo en clase", "Eructo en clase / Pedo en el ascensor",
+    "Moco debajo de la mesa / Chicle debajo de la mesa", "Chicle debajo de la mesa / Moco debajo de la mesa",
+    "Mear en la piscina / Mear en el mar", "Mear en el mar / Mear en la piscina",
+    "Calcetines sudados / Zapatillas sudadas", "Pelo en la comida / Mosca en la sopa", "Mosca en la sopa / Pelo en la comida",
+    "Cortarse las uñas en el salón / Cortarse las uñas de los pies en la cama", "Hurgarse la nariz / Morderse las uñas",
+    "Morderse las uñas / Hurgarse la nariz", "Oler la ropa antes de ponértela / Repetir camiseta tres días",
+    "Repetir camiseta tres días / Oler la ropa antes de ponértela", "Llamar mamá a la profe / Saludar a quien no te saludaba",
+    "Saludar a quien no te saludaba / Llamar mamá a la profe", "Audio al grupo equivocado / Like a una foto de hace 3 años",
+    "Like a una foto de hace 3 años / Audio al grupo equivocado", "Que te pillen cantando solo / Que te pillen hablando solo",
+    "Caerse en el recreo / Tropezar en las escaleras", "Que te suene la tripa en un examen / Pedo silencioso en un examen",
+    "Pedo silencioso en un examen / Que te suene la tripa en un examen", "Babear durmiendo / Roncar en clase",
+    "Roncar en clase / Babear durmiendo", "Cereales con agua / Cereales con zumo", "Pizza con piña / Tortilla sin cebolla",
+    "Tortilla sin cebolla / Tortilla con cebolla", "Ketchup en la paella / Mayonesa en la pizza",
+    "Mayonesa en la pizza / Ketchup en la paella", "Zumo después de lavarte los dientes / Leche caducada",
+    "Leche caducada / Yogur caducado", "Pisar caca de perro / Pisar un chicle", "Pisar un chicle / Pisar caca de perro",
+    "Lamer la tapa del yogur / Lamer el plato", "Dormir con zapatos / Ducharse con calcetines",
+    "Ducharse con calcetines / Dormir con zapatos", "Olor a pies / Olor a sobaco", "Olor a sobaco / Olor a pies",
+    "Cera de los oídos / Legaña", "Legaña / Cera de los oídos", "Uña encarnada / Callo en el pie",
+    "Grano a punto de explotar / Espinilla", "Vomitar en la guagua / Marearse en el barco",
+    "Abuela que pellizca los mofletes / Tía que pregunta por la novia", "Tía que pregunta por la novia / Abuela que pellizca los mofletes",
+    "Selfie en el baño / Selfie en el ascensor", "Masticar con la boca abierta / Sorber la sopa",
+    "Comerse los mocos / Comerse las uñas", "Culpar al perro de tu pedo / Culpar a tu hermano de tu pedo",
+    "Dormir con la luz encendida / Mirar debajo de la cama", "Bailar como un pato / Cantar mal a propósito",
+    "Imitar a un profe / Funar a un profe", "Ducharse una vez por semana / Lavarse los dientes una vez al día",
+    "Mandar un 'te quiero' a tu profe / Mandar un 'te quiero' a tu jefe", "Quedarse encerrado en el baño / Quedarse sin papel en el baño",
+    "Quedarse sin papel en el baño / Quedarse encerrado en el baño", "Comer del suelo / Regla de los 5 segundos",
+    "Calzoncillos del revés / Camiseta del revés", "Bragueta abierta / Calzoncillos del revés",
+    "Llorar con un anuncio / Llorar con Coco", "Hablar en sueños / Ser sonámbulo", "Ser sonámbulo / Hablar en sueños"
+  ]},
+
   "Personas": { icono: "🧑", palabras: [
     "Samuel", "Adriel", "Álvaro", "Pedro", "Mateo", "Alejandro", "Diego", "Fran", "David", "Daniel", "Ryan", "67"
   ]},
@@ -478,6 +521,7 @@ const CATEGORIAS = {
    Cada uno contesta en voz alta (o con los dedos a la vez)
    y hay que descubrir quién tenía otra pregunta.
    Formato: [pregunta normal, pregunta del impostor]
+   {J} y {J2} se cambian por jugadores de la partida.
    ========================================================= */
 const PREGUNTAS = [
   ["¿Cuántas horas duermes al día?", "¿Cuántas horas pasas con el móvil al día?"],
@@ -520,4 +564,106 @@ const PREGUNTAS = [
   ["¿Cuántas personas invitarías a tu cumpleaños?", "¿Cuántas personas tienes bloqueadas en el móvil?"],
   ["¿Cuál sería tu nombre de luchador?", "¿Cómo le pondrías a tu perro?"],
   ["¿Cuál es el mejor día de la semana?", "¿Cuál es el peor día de la semana?"]
+];
+
+/* =========================================================
+   PREGUNTAS PICANTES 🌶️ (se activan en Ajustes)
+   Están pensadas para que la respuesta del impostor quede
+   fatal cuando se lee la pregunta de verdad.
+   ========================================================= */
+const PREGUNTAS_PICANTES = [
+  ["¿Qué le regalarías a tu abuela?", "¿Qué tirarías por la ventana sin pensarlo?"],
+  ["¿Qué llevarías a una primera cita?", "¿Qué tienes escondido debajo de la cama?"],
+  ["¿Qué te comerías ahora mismo?", "¿Qué es lo más asqueroso que has visto en la calle?"],
+  ["¿Qué le dirías a tu profe favorito?", "¿Qué le gritarías a un árbitro?"],
+  ["¿Dónde te gustaría vivir?", "¿Dónde no entrarías ni aunque te pagaran?"],
+  ["¿Qué olor te encanta?", "¿Qué olor te da arcadas?"],
+  ["¿Qué le pedirías a los Reyes Magos?", "¿Qué tienes escondido en tu habitación?"],
+  ["¿Qué meterías en la mochila para una excursión?", "¿Qué no debería ver nunca tu madre en tu móvil?"],
+  ["¿Con qué famoso te irías de vacaciones?", "¿A qué famoso le darías una colleja?"],
+  ["¿Qué cantarías en un karaoke?", "¿Qué ruido haces cuando te despiertas?"],
+  ["¿Qué te gusta hacer un domingo por la tarde?", "¿Qué haces en el baño más tiempo del necesario?"],
+  ["¿Cuál es tu plato favorito de tu madre?", "¿Qué es lo peor que has comido en casa de un amigo?"],
+  ["¿Qué nombre le pondrías a tu hijo?", "¿Qué nombre le pondrías a un pedo?"],
+  ["¿Qué animal tendrías de mascota?", "¿Qué animal te comerías si no hubiera otra cosa?"],
+  ["¿Qué parte de tu cuerpo te gusta más?", "¿Qué parte de tu cuerpo huele peor?"],
+  ["¿Qué meterías en una tarta de cumpleaños?", "¿Qué meterías en el bocadillo del que peor te cae?"],
+  ["¿A quién llamarías si tuvieras un problema?", "¿De quién has hablado mal esta semana?"],
+  ["¿Qué es lo primero que haces al levantarte?", "¿Qué es lo último que buscaste en Google?"],
+  ["¿Qué le dirías a tu crush?", "¿Qué le dirías a un perro que te acaba de morder?"],
+  ["¿Qué harías en tu último día en la Tierra?", "¿Qué harías encerrado toda la noche en un Mercadona?"],
+  ["¿Qué comida compartirías con tus amigos?", "¿Qué no compartirías ni con tu madre?"],
+  ["¿Cuántas duchas te das a la semana?", "¿Cuántas veces a la semana comes pasta?"],
+  ["¿Cuántos días tardas en contestar un WhatsApp?", "¿Cuántos días llevas con los mismos calcetines?"],
+  ["¿Cuántas veces al día te lavas los dientes?", "¿Cuántas veces al día te hurgas la nariz?"],
+  ["¿Cuántos euros gastarías en el regalo de tu mejor amigo?", "¿Por cuántos euros te comerías un grillo vivo?"],
+  ["¿Cuántas horas estudias para un examen?", "¿Cuántas horas aguantas sin ir al baño?"],
+  ["¿Cuántos amigos de verdad tienes?", "¿Cuántos mocos te habrás comido en tu vida?"],
+  ["Del 1 al 10, ¿cuánto quieres a tu familia?", "Del 1 al 10, ¿cuánto te huelen los pies?"],
+  ["Del 1 al 10, ¿qué tal cocinas?", "Del 1 al 10, ¿cuánto mientes a tus padres?"],
+  ["Del 1 al 10, ¿cómo de guapo te ves hoy?", "Del 1 al 10, ¿cuánto te pica el culo ahora mismo?"],
+  ["Del 1 al 10, ¿cuánto te gusta tu instituto?", "Del 1 al 10, ¿cuánto miedo te dan las palomas?"],
+  ["¿Qué es lo mejor de tu habitación?", "¿Qué es lo más guarro que hay en tu habitación?"],
+  ["¿Qué te traerías de recuerdo de un viaje?", "¿Qué has robado alguna vez, aunque sea un boli?"],
+  ["¿A qué te gustaría dedicarte?", "¿Qué harías por 100 € si nadie se enterara?"],
+  ["¿Qué le dirías a tu madre el Día de la Madre?", "¿Qué le dirías a alguien que se te cuela en el Mercadona?"],
+  ["¿Cuál es tu palabra favorita?", "¿Qué palabrota dices más?"],
+  ["¿Qué te pones para dormir?", "¿Qué te pondrías para ir a la guerra?"],
+  ["¿Qué meterías en la piscina para hacerla más divertida?", "¿Qué has hecho dentro de una piscina que no deberías?"],
+  ["¿Qué es lo más bonito que te han dicho?", "¿Qué es lo peor que te ha dicho un profe?"],
+  ["¿Qué foto pondrías de perfil?", "¿Qué foto tuya borrarías de internet?"],
+  ["¿Qué canción pondrías en tu boda?", "¿Qué canción pondrías en tu funeral?"],
+  ["¿Cuál es tu mayor talento?", "¿Cuál es tu mayor vicio?"],
+  ["¿Qué harías si te encuentras 50 € en el suelo?", "¿Qué harías si te pillan copiando en un examen?"],
+  ["¿Cuál es tu postre favorito?", "¿Qué es lo más raro que has comido por una apuesta?"],
+  ["¿Qué animal serías?", "¿Qué animal es tu padre?"],
+  ["¿Qué haces cuando te aburres en clase?", "¿Qué haces cuando nadie te ve en casa?"],
+  ["¿Cuál es tu mayor miedo?", "¿Qué te daría más vergüenza que se supiera?"],
+  ["¿Qué le pondrías a una pizza?", "¿Qué le pondrías en la comida a tu peor enemigo?"],
+  ["¿A qué hora te gustaría levantarte?", "¿A qué hora fue la última vez que lloraste?"],
+  ["¿Qué le enseñarías a un extraterrestre de la Tierra?", "¿Qué le esconderías a tu madre si viniera ahora?"],
+  ["¿A quién del grupo llevarías a una isla desierta?", "¿A quién del grupo dejarías tirado en una isla desierta?"],
+  ["¿Quién del grupo sería mejor padre?", "¿Quién del grupo huele peor después de jugar al fútbol?"],
+  ["¿Quién del grupo te cae mejor?", "¿Quién del grupo te debe dinero?"],
+  ["¿Con quién del grupo compartirías habitación?", "¿Quién del grupo ronca seguro?"],
+  ["¿Quién del grupo tiene más futuro?", "¿Quién del grupo tiene el historial de búsqueda más turbio?"],
+  ["¿Quién del grupo es más listo?", "¿Quién del grupo se cree más listo de lo que es?"],
+  ["¿A quién del grupo le contarías un secreto?", "¿Quién del grupo es el más chismoso?"],
+  ["¿Quién del grupo baila mejor?", "¿Quién del grupo haría el ridículo más grande en una boda?"],
+  ["¿Quién del grupo sería un buen presidente?", "¿Quién del grupo se pasaría el día durmiendo si pudiera?"]
+];
+
+/* =========================================================
+   PREGUNTAS CON JUGADORES 👥 (se activan en Ajustes)
+   {J} = un jugador de la partida, {J2} = otro distinto
+   ========================================================= */
+const PREGUNTAS_JUGADORES = [
+  ["¿Qué le regalarías a {J} por su cumpleaños?", "¿Qué le robarías a {J} sin que se diera cuenta?"],
+  ["¿Qué lleva {J} en la mochila?", "¿Qué tiene {J} escondido debajo de la cama?"],
+  ["¿En qué trabajará {J} dentro de 10 años?", "¿Por qué acabará {J} saliendo en las noticias?"],
+  ["¿Qué animal sería {J}?", "¿A qué huele la habitación de {J}?"],
+  ["¿Qué canción define a {J}?", "¿Qué canta {J} en la ducha?"],
+  ["¿Cuál es la comida favorita de {J}?", "¿Qué le darías de comer a {J} como venganza?"],
+  ["¿Qué haría {J} con 1.000 €?", "¿Qué haría {J} solo en casa un fin de semana entero?"],
+  ["¿Qué superpoder tendría {J}?", "¿Cuál es el mayor defecto de {J}?"],
+  ["Del 1 al 10, ¿cuánto quieres a {J}?", "Del 1 al 10, ¿cuánto le huelen los pies a {J}?"],
+  ["Del 1 al 10, ¿qué tal juega {J} al fútbol?", "Del 1 al 10, ¿qué probabilidad hay de que {J} llore hoy?"],
+  ["¿A qué edad se casará {J}?", "¿Cuántos días aguanta {J} sin ducharse?"],
+  ["¿Cuántos amigos tiene {J}?", "¿Cuántas veces ha suspendido {J}?"],
+  ["¿A dónde te llevarías a {J} de viaje?", "¿Dónde dejarías tirado a {J}?"],
+  ["¿Qué le dirías a {J} si se fuera a vivir lejos?", "¿Qué le dirías a {J} si te debiera 50 €?"],
+  ["¿A qué famoso se parece {J}?", "¿A qué personaje de dibujos se parece {J}?"],
+  ["¿Qué haría {J} en un apocalipsis zombi?", "¿Qué haría {J} si le pillan copiando?"],
+  ["¿Qué tiene {J} de fondo de pantalla?", "¿Qué es lo último que ha buscado {J} en Google?"],
+  ["¿Qué apodo le pondrías a {J}?", "¿Qué insulto cariñoso le dirías a {J}?"],
+  ["¿Cómo se llamaría el canal de YouTube de {J}?", "¿Cómo se llamaría el perfume de {J}?"],
+  ["¿Qué profesión tendría {J} en la Edad Media?", "¿Por qué estaría {J} en la cárcel en la Edad Media?"],
+  ["¿Qué desayuna {J}?", "¿Qué hace {J} a las 3 de la mañana?"],
+  ["¿En qué es un crack {J}?", "¿En qué es un desastre {J}?"],
+  ["¿Qué haría {J} en una cita con {J2}?", "¿Por qué se pelearían {J} y {J2}?"],
+  ["¿Qué tienen en común {J} y {J2}?", "¿Qué secreto comparten {J} y {J2}?"],
+  ["¿Qué serie verían juntos {J} y {J2}?", "¿Qué harían {J} y {J2} si se quedaran encerrados en un ascensor?"],
+  ["¿Quién ganaría en un duelo de baile, {J} o {J2}?", "¿Quién huele peor, {J} o {J2}?"],
+  ["¿Quién es más listo, {J} o {J2}?", "¿Quién sobreviviría menos en la selva, {J} o {J2}?"],
+  ["¿Qué le cocinaría {J} a {J2}?", "¿Qué le escondería {J} a {J2} en la mochila?"]
 ];

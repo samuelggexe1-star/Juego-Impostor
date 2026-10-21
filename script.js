@@ -55,7 +55,9 @@ const AJUSTES_DEFECTO = {
   minutos: 3,
   noRepetir: true,
   sonido: true,
-  vibracion: true
+  vibracion: true,
+  picante: true,           // modo Preguntas: preguntas arriesgadas 🌶️
+  preguntasJugadores: true // modo Preguntas: preguntas con nombres de los jugadores
 };
 
 function cargar() {
@@ -120,6 +122,16 @@ function todasLasCategorias() {
   return { ...CATEGORIAS, ...propias };
 }
 
+// Cambia {J} y {J2} por jugadores de la partida (distintos entre sí)
+function conJugadores(texto, j1, j2) {
+  return texto.replace(/\{J2\}/g, j2).replace(/\{J\}/g, j1);
+}
+
+function dosJugadoresAlAzar() {
+  const [a, b] = mezclar(datos.jugadores);
+  return [a, b || a];
+}
+
 function separar(entrada) {
   const [palabra, gemela] = entrada.split(" / ").map((t) => t.trim());
   return { palabra, gemela: gemela || "" };
@@ -151,11 +163,43 @@ function elegirPalabra() {
   datos.usadas.push(elegida.cat + "|" + elegida.palabra);
   if (datos.usadas.length > 3000) datos.usadas = datos.usadas.slice(-3000);
 
+  // Palabras con jugadores: "El móvil de {J}" → "El móvil de Mateo"
+  // La gemela es la misma frase con otro jugador ("El móvil de Diego")
+  if (elegida.palabra.includes("{J")) {
+    const [j1, j2] = dosJugadoresAlAzar();
+    const plantillaGemela = elegida.gemela || elegida.palabra.replace(/\{J\}/g, "{J2}");
+    elegida.palabra = conJugadores(elegida.palabra, j1, j2);
+    elegida.gemela = conJugadores(plantillaGemela, j1, j2);
+    if (elegida.gemela === elegida.palabra) elegida.gemela = elegida.cat;
+    return elegida;
+  }
+
   // Si no tiene gemela, cogemos otra palabra de su misma categoría
   if (!elegida.gemela) {
     const otras = pares.filter((p) => p.cat === elegida.cat && p.palabra !== elegida.palabra);
     elegida.gemela = otras.length ? azar(otras).palabra : elegida.cat;
   }
+  return elegida;
+}
+
+function elegirPregunta() {
+  let lista = PREGUNTAS.map((p) => [...p, "Preguntas"]);
+  if (datos.ajustes.picante) lista = lista.concat(PREGUNTAS_PICANTES.map((p) => [...p, "Preguntas picantes 🌶️"]));
+  if (datos.ajustes.preguntasJugadores) lista = lista.concat(PREGUNTAS_JUGADORES.map((p) => [...p, "Preguntas sobre vosotros 👥"]));
+
+  let candidatas = lista;
+  if (datos.ajustes.noRepetir) {
+    const usadas = new Set(datos.usadas);
+    candidatas = lista.filter((p) => !usadas.has("P|" + p[0]));
+    if (!candidatas.length) {
+      const claves = new Set(lista.map((p) => "P|" + p[0]));
+      datos.usadas = datos.usadas.filter((u) => !claves.has(u));
+      candidatas = lista;
+      aviso("🔄 Ya habían salido todas las preguntas. ¡Empezamos de nuevo!");
+    }
+  }
+  const elegida = azar(candidatas);
+  datos.usadas.push("P|" + elegida[0]);
   return elegida;
 }
 
@@ -265,6 +309,10 @@ function pintarResumen() {
   if (a.eliminacion) partes.push("🔁 Expulsiones");
   if (a.adivinar && (datos.modo === "clasico" || datos.modo === "admin")) partes.push("🎯 Robo final");
   if (a.votoSecreto) partes.push("🤫 Voto secreto");
+  if (datos.modo === "preguntas") {
+    if (a.picante) partes.push("🌶️ Picantes");
+    if (a.preguntasJugadores) partes.push("👥 Sobre vosotros");
+  }
   $("#resumenAjustes").innerHTML = partes.map((p) => `<span>${esc(p)}</span>`).join("");
 }
 
@@ -392,10 +440,11 @@ function crearRonda() {
   const r = rondaBase();
 
   if (r.modo === "preguntas") {
-    const [normal, otra] = azar(PREGUNTAS);
-    r.palabra = normal;
-    r.gemela = otra;
-    r.categoria = "Preguntas";
+    const [normal, otra, tipo] = elegirPregunta();
+    const [j1, j2] = dosJugadoresAlAzar();
+    r.palabra = conJugadores(normal, j1, j2);
+    r.gemela = conJugadores(otra, j1, j2);
+    r.categoria = tipo;
   } else {
     const elegida = elegirPalabra();
     if (!elegida) { aviso("No hay palabras en esas categorías"); return; }
@@ -1097,7 +1146,7 @@ document.addEventListener("keydown", (e) => {
 const CASILLAS = {
   ajEliminacion: "eliminacion", ajAdivinar: "adivinar", ajNoEmpieza: "noEmpieza", ajSeConocen: "seConocen",
   ajVotoSecreto: "votoSecreto", ajTrampa: "trampa", ajTiempo: "tiempo", ajNoRepetir: "noRepetir",
-  ajSonido: "sonido", ajVibracion: "vibracion"
+  ajSonido: "sonido", ajVibracion: "vibracion", ajPicante: "picante", ajPregJugadores: "preguntasJugadores"
 };
 
 function pintarAjustes() {
