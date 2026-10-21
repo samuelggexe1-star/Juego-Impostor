@@ -25,7 +25,6 @@ let codigoActual = '';
 let desfase = 0;        // reloj del servidor - reloj de este movil
 let faseAnterior = null;
 let claveCarta = '';
-let seleccion = null;   // a quien estoy a punto de votar
 let claveExpulsion = '';
 
 // ------------------------------------------------------------------ utilidades
@@ -86,7 +85,7 @@ function tono(f, dur = 0.15, vol = 0.12, tipo = 'sine', retraso = 0) {
   } catch { /* sin audio */ }
 }
 const sonidos = {
-  alarma: () => { for (let i = 0; i < 3; i++) { tono(880, 0.22, 0.12, 'square', i * 0.45); tono(660, 0.22, 0.12, 'square', i * 0.45 + 0.22); } },
+  fin: () => { tono(784, 0.2, 0.12, 'square'); tono(523, 0.35, 0.12, 'square', 0.22); },
   voto: () => tono(520, 0.08, 0.1, 'triangle'),
   expulsion: () => { tono(180, 1.2, 0.08, 'sawtooth'); tono(120, 1.6, 0.06, 'sine', 0.3); },
   letra: () => tono(1200, 0.02, 0.03, 'square'),
@@ -193,7 +192,6 @@ function pintar(v) {
     case 'sala': pintarSala(); irA('pSala'); break;
     case 'reparto': pintarReparto(); irA('pReparto'); break;
     case 'debate': pintarDebate(); irA('pDebate'); break;
-    case 'votacion': pintarVotacion(); irA('pVotacion'); break;
     case 'resultado': pintarRecuento(); irA('pVotacion'); break;
     case 'expulsion': pintarExpulsion(); irA('pExpulsion'); break;
     case 'adivinar': pintarAdivinar(); irA('pAdivinar'); break;
@@ -204,20 +202,10 @@ function pintar(v) {
 }
 
 function alCambiarDeFase(antes, ahora) {
-  if (ahora === 'votacion') {
-    seleccion = null;
-    const r = estado.ronda;
-    const esReunion = r.motivoVoto === 'reunion';
-    $('#alarmaIcono').textContent = esReunion ? '🚨' : '⏰';
-    $('#alarmaTexto').textContent = esReunion ? '¡REUNIÓN DE EMERGENCIA!' : '¡SE ACABÓ EL DEBATE!';
-    $('#alarmaQuien').innerHTML = esReunion && r.convocante
-      ? `${avatar(r.convocante, 'grande')}<span>${esc(nombre(r.convocante))} ha pulsado el botón</span>`
-      : '<span>Toca votar</span>';
-    const caja = $('#alarma');
-    caja.classList.remove('oculto');
-    sonidos.alarma();
-    vibrar([200, 100, 200, 100, 200]);
-    setTimeout(() => caja.classList.add('oculto'), 2200);
+  if (antes === 'debate' && ahora === 'resultado') {
+    aviso('⏰ ¡Se acabó el tiempo! Contando votos…');
+    sonidos.fin();
+    vibrar([200, 100, 200]);
   }
   if (ahora === 'reparto') {
     claveCarta = '';
@@ -227,21 +215,19 @@ function alCambiarDeFase(antes, ahora) {
 }
 
 /** Los contadores de tiempo se mueven solos entre estado y estado. */
+let ultimoSegundo = null;
 function pintarRelojes() {
   if (!estado) return;
   const s = segundosRestantes();
   const f = estado.fase;
-  if (f === 'debate') {
+  if (f === 'debate' && s != null) {
     const el = $('#olCrono');
-    el.classList.toggle('oculto', s == null);
-    if (s != null) {
-      el.textContent = `⏱️ ${formatoTiempo(s)}`;
-      el.classList.toggle('urgente', s <= 10);
-    }
-  }
-  if (f === 'votacion') {
-    $('#votoTiempo').textContent = s != null ? `La votación termina en ${s} s` : '';
-    $('#votoTiempo').classList.toggle('urgente', s != null && s <= 10);
+    el.textContent = `⏱️ ${formatoTiempo(s)}`;
+    el.classList.toggle('urgente', s <= 15);
+    const total = estado.ajustes.tiempoDebate;
+    $('#olCronoBarra').style.width = `${Math.min(100, (s / total) * 100)}%`;
+    if (s <= 5 && s > 0 && s !== ultimoSegundo) tono(880, 0.07, 0.08);
+    ultimoSegundo = s;
   }
   if (f === 'resultado') $('#votoTiempo').textContent = '';
   if (f === 'adivinar') $('#olCronoAdivinar').textContent = s != null ? `⏱️ ${s} s` : '';
@@ -252,10 +238,11 @@ setInterval(pintarRelojes, 250);
 
 const AJUSTE_CASILLAS = {
   olMostrarRol: 'mostrarRol', olVotosAnonimos: 'votosAnonimos', olAdivinar: 'adivinar',
+  olCambiarVoto: 'cambiarVoto', olAcabarTodos: 'acabarSiTodosVotan',
   olNoEmpieza: 'noEmpieza', olTrampa: 'trampa', olPicante: 'picante', olPregJugadores: 'preguntasJugadores'
 };
 const AJUSTE_SELECTS = {
-  olImpostores: 'impostores', olPista: 'pista', olTiempoDebate: 'tiempoDebate', olTiempoVoto: 'tiempoVoto'
+  olImpostores: 'impostores', olPista: 'pista', olTiempoDebate: 'tiempoDebate', olExpulsados: 'expulsados'
 };
 
 function pintarSala() {
@@ -476,7 +463,7 @@ $('#btnForzarReparto').addEventListener('click', () => {
   if (confirm('¿Empezar sin esperar a los que faltan?')) mandar('forzar');
 });
 
-// ------------------------------------------------------------------ debate
+// ------------------------------------------------------------------ debate + votacion
 
 function htmlRespuestas(marcarImpostores = []) {
   const r = estado.ronda;
@@ -494,13 +481,13 @@ function pintarDebate() {
   $('#olSentido').textContent = r.horario ? 'Sentido de las agujas del reloj ⟳' : 'Sentido contrario a las agujas del reloj ⟲';
   $('#olOrden').innerHTML = r.orden.map((id, i) => `<span class="orden-item ${i === 0 ? 'primero' : ''}">
       ${avatar(id, 'mini')}<small>${i + 1}. ${esc(nombre(id))}</small></span>`).join('') +
-    r.participantes.filter((id) => !r.vivos.includes(id)).map((id) => `<span class="orden-item fuera">
+    r.expulsados.map((id) => `<span class="orden-item fuera">
       ${avatar(id, 'mini muerto')}<small>${esc(nombre(id))}</small></span>`).join('');
 
   let instr;
   if (r.modo === 'preguntas') instr = 'Estas son las respuestas. ¿Cuál no encaja con la pregunta?';
-  else if (r.numDebate === 1) instr = 'Por turnos, cada uno dice UNA palabra relacionada con la suya. Cuando lo tengáis claro, ¡botón rojo!';
-  else instr = 'El impostor sigue suelto. Otra vuelta de palabras… ¡sin repetir!';
+  else if (r.numDebate === 1) instr = 'Por turnos, cada uno dice UNA palabra relacionada con la suya. Debatid y votad antes de que se acabe el tiempo.';
+  else instr = 'Otra vuelta de palabras… ¡sin repetir! Y a votar otra vez.';
   if (r.expulsion && r.numDebate > 1) instr = `${r.expulsion.textos.join(' ')} ${instr}`;
   $('#olInstruccion').textContent = instr;
 
@@ -508,94 +495,98 @@ function pintarDebate() {
     ? `${htmlRespuestas()}<p class="pregunta-real">La pregunta de verdad era:<br><b>"${esc(r.pregunta)}"</b></p>`
     : '';
 
-  const vivo = v.yo.participante && v.yo.vivo;
-  $('#zonaEmergencia').classList.toggle('oculto', !vivo);
   $('#olFantasma').classList.toggle('oculto', !(v.yo.participante && !v.yo.vivo));
   $('#panelMiCarta').classList.toggle('oculto', !v.yo.participante);
   if (v.yo.participante && !$('#cartaDebateFrente').innerHTML) {
     $('#cartaDebateFrente').innerHTML = htmlCarta(v.yo.carta);
     $('#cartaDebateFrente').classList.toggle('impostor', v.yo.carta && v.yo.carta.tipo === 'impostor');
   }
+  pintarPanelVoto();
 }
 
-$('#btnEmergencia').addEventListener('click', () => {
-  $('#btnEmergencia').classList.add('pulsado');
-  setTimeout(() => $('#btnEmergencia').classList.remove('pulsado'), 300);
-  mandar('reunion');
-});
+/** Lo que llevo marcado en pantalla, antes de mandarlo. */
+let borrador = [];
+let claveVuelta = '';
 
-// ------------------------------------------------------------------ votacion
+const mismoVoto = (a, b) => a.length === (b || []).length && a.every((x) => (b || []).includes(x));
 
-function puedoVotar() {
-  const v = estado;
-  return v.fase === 'votacion' && v.yo.participante && v.yo.vivo && v.yo.voto == null;
-}
-
-function pintarVotacion() {
+function pintarPanelVoto() {
   const v = estado;
   const r = v.ronda;
-  $('#votoTituloOl').textContent = '¿Quién es el impostor?';
-  $('#pVotacion').classList.remove('modo-recuento');
+  const a = v.ajustes;
+  const yo = miId();
+  const puedeVotar = v.yo.participante && v.yo.vivo;
+  const mio = v.yo.votos || null;
+  const bloqueado = !!mio && !a.cambiarVoto;
+  const huecos = r.huecos || 1;
 
-  $('#placas').innerHTML = r.participantes.map((id) => {
-    const muerto = !r.vivos.includes(id);
-    const haVotado = r.votaron.includes(id);
-    const sel = seleccion === id;
-    return `<div class="placa ${muerto ? 'muerta' : ''} ${sel ? 'seleccionada' : ''} ${puedoVotar() && !muerto ? 'votable' : ''}" data-placa="${esc(id)}">
-      ${avatar(id, muerto ? 'muerto' : '')}
-      <span class="placa-info"><span class="placa-nombre">${esc(nombre(id))}${id === miId() ? ' <small>(tú)</small>' : ''}</span></span>
-      ${haVotado ? '<span class="sello">HA VOTADO</span>' : ''}
-      ${muerto ? '<span class="calavera">💀</span>' : ''}
-      ${sel ? `<span class="confirmar"><button data-si="${esc(id)}" aria-label="Confirmar">✔</button><button data-no aria-label="Cancelar">✖</button></span>` : ''}
-    </div>`;
+  const clave = `${r.num}-${r.numDebate}`;
+  if (clave !== claveVuelta) { claveVuelta = clave; borrador = mio ? [...mio] : []; }
+
+  $('#panelVoto').classList.toggle('oculto', !v.yo.participante && !r.vivos.length);
+  const vivosConectados = r.vivos.filter((id) => jugador(id).conectado);
+  $('#votoContador').textContent = `${r.votaron.length}/${vivosConectados.length} han votado`;
+  $('#votoAyuda').textContent = (huecos === 1
+    ? 'Elige a quién echar. Cuando se acabe el tiempo sale el más votado (si gana «saltar», no sale nadie).'
+    : `Puedes votar hasta a ${huecos} personas. Cuando se acabe el tiempo salen los ${huecos} más votados.`)
+    + (a.cambiarVoto ? ' Puedes cambiar el voto hasta el final.' : ' Ojo: una vez votas, no se puede cambiar.');
+
+  const candidatos = r.vivos.filter((id) => id !== yo);
+  $('#listaVoto').innerHTML = candidatos.map((id) => {
+    const marcado = borrador.includes(id);
+    return `<button class="fila-voto ${marcado ? 'marcada' : ''}" data-votar="${esc(id)}" ${!puedeVotar || bloqueado ? 'disabled' : ''}>
+      ${avatar(id)}<span class="nom">${esc(nombre(id))}</span>
+      ${r.votaron.includes(id) ? '<span class="ya-voto" title="Ya ha votado">✔ votó</span>' : ''}
+      <span class="casilla">${marcado ? '✔' : ''}</span></button>`;
   }).join('');
 
-  const opciones = [['saltar', '⏭️ SALTAR VOTO']];
-  if (v.ajustes.trampa) opciones.push(['nadie', '🤡 NO HAY IMPOSTOR']);
-  $('#filaSaltar').innerHTML = puedoVotar()
-    ? opciones.map(([valor, texto]) => seleccion === valor
-      ? `<span class="saltar seleccionada">${texto}<span class="confirmar"><button data-si="${valor}">✔</button><button data-no>✖</button></span></span>`
-      : `<button class="saltar" data-especial="${valor}">${texto}</button>`).join('')
-    : '';
+  const especiales = [['saltar', '⏭️ Saltar voto']];
+  if (a.trampa) especiales.push(['nadie', '🤡 No hay impostor']);
+  $('#votoEspeciales').innerHTML = especiales.map(([valor, texto]) =>
+    `<button class="especial ${borrador[0] === valor ? 'marcada' : ''}" data-votar="${valor}" ${!puedeVotar || bloqueado ? 'disabled' : ''}>${texto}</button>`).join('');
 
-  let miVoto = '';
-  if (!v.yo.participante) miVoto = '👀 Estás mirando esta ronda.';
-  else if (!v.yo.vivo) miVoto = '👻 Los expulsados no votan.';
-  else if (v.yo.voto === 'saltar') miVoto = 'Has saltado tu voto.';
-  else if (v.yo.voto === 'nadie') miVoto = 'Has votado que no hay impostor.';
-  else if (v.yo.voto) miVoto = `Has votado a <b>${esc(nombre(v.yo.voto))}</b>.`;
-  else miVoto = 'Toca a quien quieras expulsar.';
-  const faltan = r.vivos.filter((id) => jugador(id).conectado && !r.votaron.includes(id)).length;
-  $('#miVoto').innerHTML = `${miVoto} <span class="nota">· Faltan ${faltan} por votar</span>`;
-  $('#btnForzarVoto').classList.toggle('oculto', !(soyAnfitrion() && faltan > 0 && v.yo.voto != null));
+  $$('[data-votar]').forEach((b) => b.addEventListener('click', () => {
+    const valor = b.dataset.votar;
+    if (valor === 'saltar' || valor === 'nadie') {
+      borrador = borrador[0] === valor ? [] : [valor];
+    } else {
+      borrador = borrador.filter((x) => x !== 'saltar' && x !== 'nadie');
+      if (borrador.includes(valor)) borrador = borrador.filter((x) => x !== valor);
+      else if (huecos === 1) borrador = [valor];
+      else if (borrador.length < huecos) borrador.push(valor);
+      else aviso(`Solo puedes votar a ${huecos}`);
+    }
+    sonidos.voto();
+    pintarPanelVoto();
+  }));
 
-  $$('#placas .placa.votable').forEach((p) => p.addEventListener('click', (e) => {
-    if (e.target.closest('.confirmar')) return;
-    seleccion = p.dataset.placa;
-    sonidos.voto();
-    pintarVotacion();
-  }));
-  $$('[data-especial]').forEach((b) => b.addEventListener('click', () => {
-    seleccion = b.dataset.especial;
-    sonidos.voto();
-    pintarVotacion();
-  }));
-  $$('[data-no]').forEach((b) => b.addEventListener('click', (e) => {
-    e.stopPropagation();
-    seleccion = null;
-    pintarVotacion();
-  }));
-  $$('[data-si]').forEach((b) => b.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    const voto = b.dataset.si;
-    seleccion = null;
-    vibrar(40);
-    await mandar('votar', { voto });
-  }));
+  const boton = $('#btnVotar');
+  boton.classList.toggle('oculto', !puedeVotar || bloqueado);
+  boton.textContent = mio ? 'Cambiar mi voto' : (huecos > 1 && borrador.length ? `Votar (${borrador.length}/${huecos})` : 'Votar');
+  boton.disabled = !borrador.length || mismoVoto(borrador, mio);
+
+  let texto = '';
+  if (!v.yo.participante) texto = '👀 Estás mirando esta ronda.';
+  else if (!v.yo.vivo) texto = '👻 Los expulsados no votan.';
+  else if (!mio) texto = 'Todavía no has votado.';
+  else if (mio[0] === 'saltar') texto = 'Tu voto: saltar.';
+  else if (mio[0] === 'nadie') texto = 'Tu voto: no hay impostor.';
+  else texto = `Tu voto: <b>${mio.map((id) => esc(nombre(id))).join(', ')}</b>`;
+  if (mio && !mismoVoto(borrador, mio) && !bloqueado) texto += ' <span class="nota">(no has guardado el cambio)</span>';
+  $('#votoEstado').innerHTML = texto;
+
+  $('#btnForzarVoto').classList.toggle('oculto', !soyAnfitrion());
 }
 
+$('#btnVotar').addEventListener('click', async () => {
+  $('#btnVotar').disabled = true;
+  const r = await mandar('votar', { votos: borrador });
+  if (r) vibrar(40);
+  else pintarPanelVoto();
+});
+
 $('#btnForzarVoto').addEventListener('click', () => {
-  if (confirm('¿Cerrar la votación sin esperar a los que faltan?')) mandar('forzar');
+  if (confirm('¿Terminar ya y contar los votos?')) mandar('forzar');
 });
 
 function pintarRecuento() {
@@ -605,23 +596,21 @@ function pintarRecuento() {
   $('#pVotacion').classList.add('modo-recuento');
   $('#votoTituloOl').textContent = 'Recuento de votos';
   const votantes = (lista) => (lista || []).map((id, i) =>
-    `<span class="votante" style="animation-delay:${0.3 + i * 0.25}s">${id ? avatar(id, 'mini') : '<span class="trip-anonimo"></span>'}</span>`).join('');
+    `<span class="votante" style="animation-delay:${0.3 + i * 0.2}s">${id ? avatar(id, 'mini') : '<span class="trip-anonimo"></span>'}</span>`).join('');
 
-  $('#placas').innerHTML = r.participantes.map((id) => {
-    const muerto = !r.vivos.includes(id);
-    return `<div class="placa ${muerto ? 'muerta' : ''} ${uv.expulsado === id ? 'expulsada' : ''}">
-      ${avatar(id, muerto ? 'muerto' : '')}
+  const enJuego = r.participantes.filter((id) => r.vivos.includes(id) || uv.expulsados.includes(id));
+  $('#placas').innerHTML = enJuego.map((id) => `<div class="placa ${uv.expulsados.includes(id) ? 'expulsada' : ''}">
+      ${avatar(id)}
       <span class="placa-info"><span class="placa-nombre">${esc(nombre(id))}</span>
       <span class="votantes">${votantes(uv.detalle[id])}</span></span>
-    </div>`;
-  }).join('');
+      <span class="num-votos">${(uv.detalle[id] || []).length || ''}</span>
+    </div>`).join('');
 
-  let pie = `<div class="fila-recuento"><b>SALTARON:</b> <span class="votantes">${votantes(uv.detalle.saltar)}</span></div>`;
+  let pie = `<div class="fila-recuento"><b>SALTARON:</b> <span class="votantes">${votantes(uv.detalle.saltar) || '—'}</span></div>`;
   if (uv.detalle.nadie) pie += `<div class="fila-recuento"><b>🤡 NO HAY IMPOSTOR:</b> <span class="votantes">${votantes(uv.detalle.nadie)}</span></div>`;
   if (uv.noVotaron.length) pie += `<div class="fila-recuento nota">No votaron: ${uv.noVotaron.map((id) => esc(nombre(id))).join(', ')}</div>`;
   $('#filaSaltar').innerHTML = pie;
-  $('#miVoto').innerHTML = '';
-  $('#btnForzarVoto').classList.add('oculto');
+  $('#miVoto').innerHTML = uv.huecos > 1 ? `Se podían echar hasta ${uv.huecos}.` : '';
 }
 
 // ------------------------------------------------------------------ expulsion
@@ -635,16 +624,17 @@ function pintarExpulsion() {
   claveExpulsion = clave;
 
   const flotante = $('#flotante');
-  flotante.innerHTML = e.expulsado ? avatar(e.expulsado, 'enorme') : '';
+  flotante.innerHTML = e.expulsados.map((id, i) =>
+    `<span class="volador" style="animation-delay:${i * 0.9}s;top:${i * 70}px">${avatar(id, 'enorme')}</span>`).join('');
   flotante.classList.remove('vuela');
   void flotante.offsetWidth; // reinicia la animacion
-  if (e.expulsado) flotante.classList.add('vuela');
+  if (e.expulsados.length) flotante.classList.add('vuela');
   sonidos.expulsion();
 
+  $('#textoExpulsion2').textContent = '';
   escribirLento($('#textoExpulsion1'), e.textos[0] || '', 900, () => {
     escribirLento($('#textoExpulsion2'), e.textos.slice(1).join(' '), 300);
   });
-  $('#textoExpulsion2').textContent = '';
 }
 
 /** Escribe letra a letra, como en Among Us. */
@@ -723,6 +713,12 @@ function pintarFinal(recienLlegado) {
   cajas.push(`<div><small>Impostor(es)</small><b class="con-avatares">${quienes}</b></div>`);
   if (f.adivinanza) {
     cajas.push(`<div><small>Intentó adivinar</small><b>${f.adivinanza.texto ? `"${esc(f.adivinanza.texto)}"` : 'No le dio tiempo'} ${f.adivinanza.acierto ? '✅' : '❌'}</b></div>`);
+  }
+  if (f.historialExpulsiones && f.historialExpulsiones.length) {
+    const filas = f.historialExpulsiones.map((h) => `<div class="fila-historial"><span class="nota">Vuelta ${h.vuelta}</span>
+      ${h.ids.map((id) => `<span class="expulsado-final ${f.impostores.includes(id) ? 'era-impostor' : ''}">${avatar(id, 'mini')} ${esc(nombre(id))}
+        <small>${f.impostores.includes(id) ? '🔪 impostor' : '😇 inocente'}</small></span>`).join('')}</div>`).join('');
+    cajas.push(`<div><small>Expulsados</small>${filas}</div>`);
   }
   if (esPregunta && r.respuestas) cajas.push(`<div><small>Respuestas</small>${htmlRespuestas(f.impostores)}</div>`);
   $('#olRevelacion').innerHTML = cajas.join('');

@@ -40,10 +40,12 @@ export const AJUSTES_DEFECTO = {
   categorias: ['Comida', 'Animales', 'Videojuegos', 'Lugares Locales', 'Vosotros'],
   impostores: 0,            // 0 = automatico segun jugadores
   pista: 'categoria',       // nada | categoria | parecida | ambas
-  tiempoDebate: 120,        // segundos; 0 = sin limite (solo reunion de emergencia)
-  tiempoVoto: 60,           // segundos
+  tiempoDebate: 180,        // segundos para debatir y votar a la vez
+  expulsados: 1,            // cuantos se echan por turno (y a cuantos vota cada uno)
   votosAnonimos: false,     // en el recuento no se ve quien voto a quien
-  mostrarRol: true,         // al expulsar se dice si era el impostor
+  mostrarRol: true,         // al expulsar se dice si era el impostor (si no, se sabe al final)
+  cambiarVoto: true,        // se puede cambiar el voto hasta que se acabe el tiempo
+  acabarSiTodosVotan: false, // si todos han votado, no se espera al reloj
   trampa: false,            // a veces no hay impostor, o lo son todos
   probTrampa: 10,
   adivinar: true,           // el impostor pillado puede robar la victoria
@@ -107,10 +109,10 @@ export function limpiarAjustes(entrada = {}, anteriores = AJUSTES_DEFECTO, categ
       .slice(0, 100);
   }
   if ('impostores' in entrada) a.impostores = num(entrada.impostores, 0, 7, a.impostores);
-  if ('tiempoDebate' in entrada) a.tiempoDebate = num(entrada.tiempoDebate, 0, 600, a.tiempoDebate);
-  if ('tiempoVoto' in entrada) a.tiempoVoto = num(entrada.tiempoVoto, 15, 300, a.tiempoVoto);
+  if ('tiempoDebate' in entrada) a.tiempoDebate = num(entrada.tiempoDebate, 30, 900, a.tiempoDebate);
+  if ('expulsados' in entrada) a.expulsados = num(entrada.expulsados, 1, 3, a.expulsados);
   if ('probTrampa' in entrada) a.probTrampa = num(entrada.probTrampa, 1, 50, a.probTrampa);
-  for (const clave of ['votosAnonimos', 'mostrarRol', 'trampa', 'adivinar', 'noEmpieza', 'picante', 'preguntasJugadores']) {
+  for (const clave of ['votosAnonimos', 'mostrarRol', 'cambiarVoto', 'acabarSiTodosVotan', 'trampa', 'adivinar', 'noEmpieza', 'picante', 'preguntasJugadores']) {
     if (clave in entrada) a[clave] = !!entrada[clave];
   }
   return a;
@@ -266,9 +268,8 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       empieza: null,
       orden: [],
       horario: true,
-      convocante: null,
-      motivoVoto: null,
       ultimoVoto: null,
+      historialExpulsiones: [],
       expulsion: null,
       acertantes: new Set(),
       adivina: null,
@@ -319,8 +320,9 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
     r.orden = orden.slice(pos).concat(orden.slice(0, pos));
     r.numDebate++;
     r.votos = {};
+    // Se debate y se vota a la vez: cuando se acaba el tiempo, se cuenta.
     sala.fase = 'debate';
-    sala.fin = sala.ajustes.tiempoDebate ? ahora() + sala.ajustes.tiempoDebate * 1000 : null;
+    sala.fin = ahora() + sala.ajustes.tiempoDebate * 1000;
   };
 
   const vivosConectados = (sala) => sala.ronda.participantes
@@ -337,100 +339,136 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
     return false;
   };
 
-  const empezarVotacion = (sala, convocante, motivo) => {
-    const r = sala.ronda;
-    r.votos = {};
-    r.convocante = convocante;
-    r.motivoVoto = motivo; // 'reunion' | 'tiempo'
-    sala.fase = 'votacion';
-    sala.fin = ahora() + sala.ajustes.tiempoVoto * 1000;
-  };
-
+  /** Con el ajuste de "acabar si todos han votado", no se espera al reloj. */
   const comprobarVotos = (sala) => {
-    if (sala.fase !== 'votacion') return false;
-    const faltan = vivosConectados(sala).filter((id) => !(id in sala.ronda.votos));
-    if (!faltan.length) { cerrarVotacion(sala); return true; }
+    if (sala.fase !== 'debate' || !sala.ajustes.acabarSiTodosVotan) return false;
+    const vivos = vivosConectados(sala);
+    if (vivos.length && vivos.every((id) => id in sala.ronda.votos)) { cerrarVotacion(sala); return true; }
     return false;
   };
 
+  /** Cuantos se pueden echar esta vez: nunca tantos que no quede partida. */
+  const expulsablesAhora = (sala) => {
+    const vivos = sala.ronda.vivos.size;
+    return Math.max(1, Math.min(sala.ajustes.expulsados, vivos - 2));
+  };
+
+  /**
+   * El recuento. Cada uno ha votado hasta N personas, o ha saltado.
+   * Salen los N mas votados, siempre que tengan mas votos que los que han
+   * saltado. Si hay empate justo en el ultimo hueco, no sale ninguno de los
+   * empatados (no se echa a nadie a suertes).
+   */
   const cerrarVotacion = (sala) => {
     const r = sala.ronda;
-    const recuento = {};
-    for (const voto of Object.values(r.votos)) recuento[voto] = (recuento[voto] || 0) + 1;
-    const maximo = Math.max(0, ...Object.values(recuento));
-    const arriba = Object.keys(recuento).filter((k) => recuento[k] === maximo);
+    const huecos = expulsablesAhora(sala);
+    const porJugador = {};
+    let saltos = 0;
+    let nadie = 0;
+    for (const voto of Object.values(r.votos)) {
+      if (voto[0] === 'saltar') saltos++;
+      else if (voto[0] === 'nadie') nadie++;
+      else for (const id of voto) porJugador[id] = (porJugador[id] || 0) + 1;
+    }
 
-    let expulsado = null;
-    let motivo = 'nadie';
-    if (maximo === 0) motivo = 'nadieVoto';
-    else if (arriba.length > 1) motivo = 'empate';
-    else if (arriba[0] === 'saltar') motivo = 'saltado';
-    else if (arriba[0] === 'nadie') motivo = 'noHayImpostor';
-    else { expulsado = arriba[0]; motivo = 'expulsado'; }
-
-    // Quien voto a quien. Con votos anonimos no se dice, solo cuantos.
     const detalle = {};
     for (const [votante, voto] of Object.entries(r.votos)) {
-      (detalle[voto] = detalle[voto] || []).push(sala.ajustes.votosAnonimos ? null : votante);
+      for (const objetivo of voto) {
+        (detalle[objetivo] = detalle[objetivo] || []).push(sala.ajustes.votosAnonimos ? null : votante);
+      }
     }
-    if (expulsado && r.impostores.has(expulsado)) {
-      for (const [votante, voto] of Object.entries(r.votos)) if (voto === expulsado) r.acertantes.add(votante);
+    const noVotaron = vivosConectados(sala).filter((id) => !(id in r.votos));
+    const maxJugador = Math.max(0, ...Object.values(porJugador));
+
+    let expulsados = [];
+    let motivo;
+    if (nadie > 0 && nadie > maxJugador && nadie > saltos) {
+      motivo = 'noHayImpostor';
+    } else {
+      const candidatos = Object.entries(porJugador)
+        .filter(([, n]) => n > saltos)
+        .sort((a, b) => b[1] - a[1]);
+      let i = 0;
+      while (i < candidatos.length && expulsados.length < huecos) {
+        const n = candidatos[i][1];
+        const grupo = candidatos.filter(([, m]) => m === n).map(([id]) => id);
+        if (expulsados.length + grupo.length > huecos) break; // empate en el ultimo hueco
+        expulsados = expulsados.concat(grupo);
+        i += grupo.length;
+      }
+      if (expulsados.length) motivo = 'expulsado';
+      else if (!Object.keys(r.votos).length) motivo = 'nadieVoto';
+      else if (saltos >= maxJugador) motivo = 'saltado';
+      else motivo = 'empate';
     }
-    r.ultimoVoto = { detalle, expulsado, motivo, noVotaron: vivosConectados(sala).filter((id) => !(id in r.votos)) };
+
+    for (const [votante, voto] of Object.entries(r.votos)) {
+      if (voto.some((id) => expulsados.includes(id) && r.impostores.has(id))) r.acertantes.add(votante);
+    }
+    r.ultimoVoto = { detalle, expulsados, motivo, noVotaron, huecos, saltos };
     sala.fase = 'resultado';
     sala.fin = ahora() + DURACION.resultado;
   };
 
-  /** Despues del recuento: quien sale y que pasa luego. */
+  /** Despues del recuento: quien sale, que se dice y que pasa luego. */
   const aplicarExpulsion = (sala) => {
     const r = sala.ronda;
-    const { expulsado, motivo } = r.ultimoVoto;
+    const { expulsados, motivo } = r.ultimoVoto;
     const textos = [];
+    const roles = {};   // solo se rellena si se dice el rol al expulsar
     let siguiente = 'debate';
     let resultado = null;
-    let esImpostor = null;
+    const mostrar = sala.ajustes.mostrarRol;
+    const quien = r.modo === 'undercover' ? 'el undercover' : 'el impostor';
+    const lista = (ids) => {
+      const n = ids.map((id) => nombreDe(sala, id));
+      return n.length > 1 ? `${n.slice(0, -1).join(', ')} y ${n[n.length - 1]}` : n[0];
+    };
 
     if (motivo === 'noHayImpostor') {
       textos.push('Habéis votado que no hay ningún impostor…');
       resultado = r.trampa === 'ninguno' ? 'trampaAcertada' : 'impostor';
-      textos.push(r.trampa === 'ninguno' ? '…y es verdad. No había impostor 🧠' : '…pero sí que lo había 🔪');
       siguiente = 'final';
-    } else if (!expulsado) {
-      textos.push(motivo === 'empate' ? 'Nadie ha sido expulsado. (Empate)' : 'Nadie ha sido expulsado. (Votación saltada)');
+    } else if (!expulsados.length) {
+      textos.push(motivo === 'empate' ? 'Nadie ha sido expulsado. (Empate)'
+        : motivo === 'nadieVoto' ? 'Nadie ha votado. Nadie sale.' : 'Nadie ha sido expulsado. (Se ha saltado)');
     } else {
-      r.vivos.delete(expulsado);
-      esImpostor = r.impostores.has(expulsado);
-      const nombre = nombreDe(sala, expulsado);
-      const quien = r.modo === 'undercover' ? 'el undercover' : 'el impostor';
+      for (const id of expulsados) r.vivos.delete(id);
+      r.historialExpulsiones.push({ vuelta: r.numDebate, ids: [...expulsados] });
 
       if (r.trampa === 'ninguno') {
-        textos.push(`${nombre} no era ${quien}.`, '…y es que no había ningún impostor 🤡');
         siguiente = 'final'; resultado = 'trampaFallada';
       } else if (r.trampa === 'todos') {
-        textos.push(`${nombre} era ${quien}.`, 'Como todos los demás 😂');
         siguiente = 'final'; resultado = 'todos';
-      } else if (sala.ajustes.mostrarRol) {
-        textos.push(esImpostor ? `${nombre} era ${quien}.` : `${nombre} no era ${quien}.`);
+      }
+
+      if (mostrar && !r.trampa) {
+        for (const id of expulsados) {
+          roles[id] = r.impostores.has(id);
+          textos.push(roles[id] ? `${nombreDe(sala, id)} era ${quien}.` : `${nombreDe(sala, id)} no era ${quien}.`);
+        }
       } else {
-        textos.push(`${nombre} ha sido expulsado.`);
+        textos.push(expulsados.length > 1 ? `${lista(expulsados)} han sido expulsados.` : `${lista(expulsados)} ha sido expulsado.`);
+        if (!mostrar && !resultado) textos.push('Lo que eran… lo sabréis al final 🤫');
       }
     }
 
     if (!resultado && siguiente !== 'final') {
       const impVivos = [...r.impostores].filter((id) => r.vivos.has(id)).length;
       const inoVivos = r.vivos.size - impVivos;
-      if (sala.ajustes.mostrarRol || impVivos === 0) {
-        textos.push(impVivos === 0 ? 'No queda ningún impostor.' : impVivos === 1 ? 'Queda 1 impostor.' : `Quedan ${impVivos} impostores.`);
-      }
       if (impVivos === 0) {
-        if (sala.ajustes.adivinar && r.modo === 'clasico') { siguiente = 'adivinar'; r.adivina = expulsado; }
+        const pillado = expulsados.find((id) => r.impostores.has(id));
+        if (sala.ajustes.adivinar && r.modo === 'clasico' && pillado) { siguiente = 'adivinar'; r.adivina = pillado; }
         else { siguiente = 'final'; resultado = 'inocentes'; }
       } else if (impVivos >= inoVivos) {
+        // Los impostores ya son la mitad: ganan directamente
         siguiente = 'final'; resultado = 'impostor';
+      } else if (mostrar) {
+        textos.push(impVivos === 1 ? 'Queda 1 impostor.' : `Quedan ${impVivos} impostores.`);
       }
     }
 
-    r.expulsion = { expulsado, esImpostor: sala.ajustes.mostrarRol || r.trampa ? esImpostor : null, textos, siguiente, resultado };
+    r.expulsion = { expulsados: [...expulsados], roles, textos, siguiente, resultado };
     sala.fase = 'expulsion';
     sala.fin = ahora() + DURACION.expulsion;
   };
@@ -518,14 +556,14 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       empieza: r.empieza,
       orden: r.orden,
       horario: r.horario,
-      convocante: r.convocante,
-      motivoVoto: r.motivoVoto,
-      // En plena votacion solo se sabe QUIEN ha votado, no a quien.
-      votaron: Object.keys(r.votos),
-      ultimoVoto: fase === 'votacion' ? null : r.ultimoVoto,
-      expulsion: ['expulsion', 'adivinar', 'final'].includes(fase) || (fase === 'debate' && r.expulsion)
-        ? r.expulsion && { expulsado: r.expulsion.expulsado, esImpostor: r.expulsion.esImpostor, textos: r.expulsion.textos }
+      // Mientras se vota solo se sabe QUIEN ha votado, no a quien.
+      votaron: fase === 'debate' ? Object.keys(r.votos) : [],
+      huecos: fase === 'debate' ? expulsablesAhora(sala) : null,
+      ultimoVoto: fase === 'debate' && !r.expulsion ? null : r.ultimoVoto,
+      expulsion: r.expulsion && fase !== 'resultado'
+        ? { expulsados: r.expulsion.expulsados, roles: r.expulsion.roles, textos: r.expulsion.textos }
         : null,
+      expulsados: r.participantes.filter((id) => !r.vivos.has(id)),
       // Las respuestas y la pregunta de verdad se ven cuando ya ha contestado todo el mundo.
       respuestas: pasadoReparto && r.modo === 'preguntas' ? r.respuestas : null,
       pregunta: pasadoReparto && r.modo === 'preguntas' ? r.palabra : null,
@@ -542,7 +580,8 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
         trampa: r.trampa,
         resultado: r.resultado,
         adivinanza: r.adivinanza,
-        acertantes: [...r.acertantes]
+        acertantes: [...r.acertantes],
+        historialExpulsiones: r.historialExpulsiones
       };
     }
 
@@ -554,7 +593,7 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
         carta: cartaDe(sala, paraId),
         listo: r.listos.has(paraId),
         respuesta: r.respuestas[paraId] || null,
-        voto: fase === 'votacion' ? (r.votos[paraId] ?? null) : null,
+        votos: fase === 'debate' ? (r.votos[paraId] || null) : null,
         // El impostor de verdad (no el de una ronda trampa de todos) sabe que lo es.
         // En Undercover y Preguntas no lo sabe: no se le dice.
         soyImpostor: r.modo === 'clasico' ? r.impostores.has(paraId) : null
@@ -704,41 +743,49 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       return { sala };
     },
 
-    /** El anfitrion no espera mas a los que no contestan. */
+    /** El anfitrion no espera mas: a los que no contestan, o al reloj del debate. */
     forzar(codigo, id) {
       const sala = buscar(codigo);
       if (!sala) return { error: 'Esa sala no existe' };
       if (!esAnfitrion(sala, id)) return { error: 'Solo el anfitrión puede hacer eso' };
       if (sala.fase === 'reparto') empezarDebate(sala);
-      else if (sala.fase === 'votacion') cerrarVotacion(sala);
+      else if (sala.fase === 'debate') cerrarVotacion(sala);
       else return { error: 'Ahora no hace falta' };
       tocar(sala);
       return { sala };
     },
 
-    /** El boton rojo: ¡reunion de emergencia! */
-    reunion(codigo, id) {
+    /**
+     * Votar mientras se debate. `votos` es una lista: hasta N jugadores (N =
+     * expulsados por turno), o ['saltar'], o ['nadie'] (no hay impostor).
+     * Una lista vacia quita el voto.
+     */
+    votar(codigo, id, votos) {
       const sala = buscar(codigo);
       if (!sala) return { error: 'Esa sala no existe' };
-      if (sala.fase !== 'debate') return { error: 'Ahora no se puede convocar una reunión' };
-      if (!participanteVivo(sala, id)) return { error: 'Los expulsados no pueden convocar reuniones 👻' };
-      empezarVotacion(sala, id, 'reunion');
-      tocar(sala);
-      return { sala };
-    },
-
-    votar(codigo, id, voto) {
-      const sala = buscar(codigo);
-      if (!sala) return { error: 'Esa sala no existe' };
-      if (sala.fase !== 'votacion') return { error: 'La votación ya se ha cerrado' };
+      if (sala.fase !== 'debate') return { error: 'Ahora no se vota' };
       const r = sala.ronda;
       if (!participanteVivo(sala, id)) return { error: 'Los expulsados no votan 👻' };
-      if (id in r.votos) return { error: 'Ya has votado' };
-      const valido = voto === 'saltar'
-        || (voto === 'nadie' && sala.ajustes.trampa)
-        || (r.participantes.includes(voto) && r.vivos.has(voto));
-      if (!valido) return { error: 'Ese voto no vale' };
-      r.votos[id] = voto;
+      if (id in r.votos && !sala.ajustes.cambiarVoto) return { error: 'Ya has votado y en esta sala no se puede cambiar' };
+      const lista = Array.isArray(votos) ? [...new Set(votos.map(String))] : [];
+
+      if (!lista.length) {
+        if (!sala.ajustes.cambiarVoto) return { error: 'Elige a alguien' };
+        delete r.votos[id];
+        tocar(sala);
+        return { sala };
+      }
+      if (lista.length === 1 && lista[0] === 'saltar') r.votos[id] = ['saltar'];
+      else if (lista.length === 1 && lista[0] === 'nadie') {
+        if (!sala.ajustes.trampa) return { error: 'Ese voto no vale' };
+        r.votos[id] = ['nadie'];
+      } else {
+        const huecos = expulsablesAhora(sala);
+        if (lista.length > huecos) return { error: huecos === 1 ? 'Solo puedes votar a 1 persona' : `Solo puedes votar a ${huecos} personas` };
+        if (lista.includes(id)) return { error: 'No te puedes votar a ti mismo' };
+        if (!lista.every((x) => r.participantes.includes(x) && r.vivos.has(x))) return { error: 'Ese voto no vale' };
+        r.votos[id] = lista;
+      }
       tocar(sala);
       comprobarVotos(sala);
       return { sala };
@@ -766,8 +813,7 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       for (const sala of salas.values()) {
         if (sala.fin == null || t < sala.fin) continue;
         switch (sala.fase) {
-          case 'debate': empezarVotacion(sala, null, 'tiempo'); break;
-          case 'votacion': cerrarVotacion(sala); break;
+          case 'debate': cerrarVotacion(sala); break;
           case 'resultado': aplicarExpulsion(sala); break;
           case 'expulsion': trasExpulsion(sala); break;
           case 'adivinar':

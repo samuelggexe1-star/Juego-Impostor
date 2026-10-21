@@ -153,8 +153,9 @@ const ACCIONES = {
   volver: (c, yo) => Salas.volverASala(c, yo),
   listo: (c, yo, cu) => Salas.listo(c, yo, cu.respuesta),
   forzar: (c, yo) => Salas.forzar(c, yo),
-  reunion: (c, yo) => Salas.reunion(c, yo),
-  votar: (c, yo, cu) => Salas.votar(c, yo, cu.voto === 'saltar' || cu.voto === 'nadie' ? cu.voto : id(cu.voto)),
+  votar: (c, yo, cu) => Salas.votar(c, yo, Array.isArray(cu.votos)
+    ? cu.votos.slice(0, 5).map((v) => (v === 'saltar' || v === 'nadie' ? v : id(v)))
+    : []),
   adivinar: (c, yo, cu) => Salas.adivinar(c, yo, cu.texto)
 };
 

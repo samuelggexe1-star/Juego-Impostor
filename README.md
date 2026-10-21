@@ -37,13 +37,15 @@ Juego de fiesta para jugar con un solo móvil pasándolo de mano en mano. Todos 
 
 ## 🌐 Modo online (cada uno con su móvil)
 
-Hecho igual que el billar: un servidor Node sin dependencias, salas con código de 4 letras y SSE + POST (funciona en la wifi del instituto, que bloquea los websockets).
+Montado igual que el billar: un servidor Node sin dependencias, salas con código de 4 letras y SSE + POST (funciona en la wifi del instituto, que bloquea los websockets).
 
 - **Sala de espera**: el anfitrión crea la sala, los demás entran con el código o con el enlace de invitación. Cada uno tiene su color de tripulante.
 - **Cada uno ve su carta en su móvil.** El servidor solo le manda a cada móvil SU carta, así que nadie puede mirar quién es el impostor.
-- **Debate** con orden de turnos y botón rojo de **reunión de emergencia** que puede pulsar cualquiera.
-- **Votación al estilo Among Us**: tocas a alguien y confirmas con ✔, sale el sello "HA VOTADO", puedes saltar el voto, hay tiempo límite y luego el recuento con quién votó a quién (o votos anónimos).
-- **Expulsión** en el espacio: "X era el impostor." / "Queda 1 impostor."
+- **Debate y votación a la vez**: hay un tiempo (1 a 10 min) para hablar y votar. Cuando se acaba, sale el más votado (si gana «saltar», no sale nadie). Se puede cambiar el voto hasta el final, o desactivarlo.
+- **Varios expulsados por turno** (ajuste): si son 2, cada uno vota a 2 personas y salen los 2 más votados. Si hay empate en el último hueco, no sale ninguno de los empatados.
+- **Roles ocultos** (ajuste): no se dice si el expulsado era impostor; se descubre al final, con la lista de expulsados de cada vuelta.
+- Si los impostores llegan a ser la mitad de los que quedan, ganan directamente.
+- **Expulsión** en el espacio: "X era el impostor." / "X ha sido expulsado."
 - **VICTORIA / DERROTA** según tu bando, y marcador de la sala.
 - En el modo Preguntas cada uno escribe su respuesta en su móvil y se revelan todas a la vez.
 

@@ -125,22 +125,7 @@ select {
   background: rgba(154, 165, 177, 0.12); border: 1px dashed rgba(154, 165, 177, 0.5);
 }
 
-.boton-emergencia {
-  width: 180px; height: 180px; border-radius: 50%; margin: 6px auto 0; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  font-family: inherit; color: #fff; font-size: .9rem; letter-spacing: .06em;
-  background: radial-gradient(circle at 35% 30%, #ff6b6b, #c51111 55%, #7a0909);
-  border: 10px solid #b9c2cc;
-  box-shadow: 0 10px 0 #6b7480, 0 18px 30px rgba(0,0,0,.5), inset 0 -8px 0 rgba(0,0,0,.25);
-  transition: transform .1s ease, box-shadow .1s ease;
-}
-.boton-emergencia b { font-size: 1.15rem; letter-spacing: .04em; }
-.boton-emergencia:active, .boton-emergencia.pulsado {
-  transform: translateY(8px);
-  box-shadow: 0 2px 0 #6b7480, 0 8px 16px rgba(0,0,0,.5), inset 0 -4px 0 rgba(0,0,0,.25);
-}
-
-/* ---------- Votación (la tablet de Among Us) ---------- */
+/* ---------- Recuento de votos ---------- */
 .mesa-votos {
   background: linear-gradient(180deg, #8fa3b8, #6d8197);
   border-radius: 18px; padding: 12px;
@@ -218,8 +203,9 @@ select {
 .estrellas.lejos { opacity: .5; background-size: 180px 180px; animation-duration: 55s; }
 @keyframes estrellas { to { transform: translateX(-300px); } }
 
-.flotante { position: absolute; top: 24%; left: -140px; }
-.flotante.vuela { animation: flotar 6.5s linear forwards; }
+.flotante { position: absolute; top: 18%; left: 0; right: 0; height: 240px; }
+.volador { position: absolute; left: -140px; }
+.flotante.vuela .volador { animation: flotar 6s linear both; }
 @keyframes flotar {
   from { left: -140px; transform: rotate(0deg); }
   to { left: calc(100% + 140px); transform: rotate(720deg); }
@@ -227,21 +213,6 @@ select {
 .texto-expulsion { position: relative; z-index: 2; text-align: center; padding: 0 20px; margin-top: 45vh; }
 .texto-expulsion p { margin: 6px 0; font-size: 1.35rem; font-weight: 700; color: #fff; min-height: 1.6em; }
 .texto-expulsion .secundario { font-size: 1rem; color: #cbd5e1; font-weight: 500; }
-
-/* ---------- Aviso de reunión ---------- */
-.alarma {
-  position: fixed; inset: 0; z-index: 300; display: grid; place-items: center;
-  background: radial-gradient(circle, rgba(197,17,17,.55), rgba(10,0,0,.92));
-  animation: parpadeo .45s steps(2) 4;
-}
-@keyframes parpadeo { 50% { background: rgba(10,0,0,.92); } }
-.alarma-caja { text-align: center; color: #fff; animation: pop .35s ease; padding: 20px; }
-.alarma-icono { font-size: 4rem; }
-.alarma-texto {
-  font-size: 2rem; font-weight: 900; letter-spacing: .04em; line-height: 1.1;
-  text-shadow: 0 4px 0 #000, 0 0 20px rgba(255,80,80,.8);
-}
-.alarma-quien { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 14px; font-weight: 600; }
 
 /* ---------- Final ---------- */
 .banner-final {
@@ -265,3 +236,45 @@ select {
   .boton-emergencia { width: 150px; height: 150px; }
   .codigo-grande { font-size: 2.8rem; }
 }
+
+/* ---------- Debate + votación ---------- */
+.crono-debate { font-size: 3rem; font-weight: 900; font-variant-numeric: tabular-nums; margin-top: 12px; line-height: 1; }
+.crono-debate.urgente { color: var(--rojo2); animation: latir .8s ease-in-out infinite; }
+#olCronoBarra { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .25s linear; }
+
+.lista-voto { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 8px; }
+.fila-voto {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 8px 12px; border-radius: 12px; cursor: pointer; font-family: inherit; font-size: 1rem;
+  background: rgba(255, 255, 255, 0.05); color: var(--text); border: 1px solid var(--borde);
+  transition: background .12s ease, border-color .12s ease;
+}
+.fila-voto .nom { flex: 1; font-weight: 600; }
+.fila-voto:hover:not(:disabled) { border-color: var(--rojo2); }
+.fila-voto.marcada { background: rgba(244, 63, 94, 0.18); border-color: var(--rojo2); }
+.fila-voto:disabled { cursor: default; opacity: .7; }
+.ya-voto { font-size: .72rem; color: var(--accent2); }
+.casilla {
+  width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; flex: none;
+  border: 2px solid rgba(255,255,255,.3); font-weight: 900; color: #fff;
+}
+.fila-voto.marcada .casilla { background: var(--rojo); border-color: var(--rojo2); }
+.voto-especiales { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.especial {
+  flex: 1; padding: 10px; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: .9rem; font-weight: 700;
+  background: rgba(255,255,255,.05); color: var(--text); border: 1px dashed rgba(255,255,255,.3);
+}
+.especial.marcada { background: rgba(251, 191, 36, 0.18); border: 1px solid var(--amarillo); }
+.especial:disabled { opacity: .6; cursor: default; }
+.voto-estado { text-align: center; margin: 10px 0 0; font-size: .92rem; }
+#btnForzarVoto { align-self: center; }
+
+.num-votos { font-size: 1.4rem; font-weight: 900; color: #9b0f0f; }
+
+.fila-historial { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: center; margin-top: 6px; }
+.expulsado-final {
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px;
+  background: rgba(110, 231, 183, 0.12); font-weight: 700; font-size: .92rem;
+}
+.expulsado-final small { font-weight: 500; color: var(--suave); }
+.expulsado-final.era-impostor { background: rgba(244, 63, 94, 0.18); }

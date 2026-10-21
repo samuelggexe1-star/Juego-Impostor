@@ -103,22 +103,26 @@
               <option value="parecida">Palabra parecida</option><option value="ambas">Las dos</option>
             </select>
           </label>
-          <label>Tiempo de debate
+          <label>Tiempo para debatir y votar
             <select id="olTiempoDebate">
-              <option value="0">Sin límite</option><option value="60">1 min</option><option value="90">1:30</option>
-              <option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option>
+              <option value="60">1 min</option><option value="90">1:30</option><option value="120">2 min</option>
+              <option value="180">3 min</option><option value="240">4 min</option><option value="300">5 min</option>
+              <option value="420">7 min</option><option value="600">10 min</option>
             </select>
           </label>
-          <label>Tiempo para votar
-            <select id="olTiempoVoto">
-              <option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option>
-              <option value="90">1:30</option><option value="120">2 min</option>
+          <label>Expulsados por turno
+            <select id="olExpulsados">
+              <option value="1">1 (cada uno vota a 1)</option>
+              <option value="2">2 (cada uno vota a 2)</option>
+              <option value="3">3 (cada uno vota a 3)</option>
             </select>
           </label>
         </div>
 
-        <label class="interruptor"><input type="checkbox" id="olMostrarRol" /><span>Al expulsar, decir si era el impostor</span></label>
-        <label class="interruptor"><input type="checkbox" id="olVotosAnonimos" /><span>Votos anónimos</span></label>
+        <label class="interruptor"><input type="checkbox" id="olMostrarRol" /><span>Al expulsar, decir si era impostor (si no, se descubre al final de la partida)</span></label>
+        <label class="interruptor"><input type="checkbox" id="olCambiarVoto" /><span>Se puede cambiar el voto hasta que acabe el tiempo</span></label>
+        <label class="interruptor"><input type="checkbox" id="olAcabarTodos" /><span>Si todos han votado, se cuenta sin esperar al tiempo</span></label>
+        <label class="interruptor"><input type="checkbox" id="olVotosAnonimos" /><span>Votos anónimos (en el recuento no se ve quién votó a quién)</span></label>
         <label class="interruptor"><input type="checkbox" id="olAdivinar" /><span>El impostor pillado puede robar la victoria adivinando la palabra</span></label>
         <label class="interruptor"><input type="checkbox" id="olNoEmpieza" /><span>El impostor nunca empieza a hablar</span></label>
         <label class="interruptor"><input type="checkbox" id="olTrampa" /><span>Rondas trampa (a veces no hay impostor, o lo son todos)</span></label>
@@ -167,19 +171,26 @@
         <h2 class="titulo-debate">Empieza <span id="olEmpieza" class="resalte">—</span></h2>
         <p class="nota" id="olSentido"></p>
         <div id="olOrden" class="orden-avatares"></div>
-        <div id="olCrono" class="crono-mini oculto"></div>
+        <div id="olCrono" class="crono-debate"></div>
+        <div class="crono-barra"><div id="olCronoBarra"></div></div>
         <p class="nota" id="olInstruccion"></p>
         <div id="olRespuestasDebate"></div>
       </div>
 
       <div id="olFantasma" class="aviso-fantasma oculto">👻 Te han expulsado. Puedes mirar, pero ya no votas.</div>
 
-      <div class="centrado" id="zonaEmergencia">
-        <button class="boton-emergencia" id="btnEmergencia">
-          <span>REUNIÓN DE</span><b>EMERGENCIA</b>
-        </button>
-        <p class="nota">Cuando lo tengáis claro, cualquiera puede pulsarlo.</p>
+      <div class="panel" id="panelVoto">
+        <div class="panel-titulo">
+          <h2>🗳️ Votación</h2>
+          <span class="pill" id="votoContador">0/0</span>
+        </div>
+        <p class="nota" id="votoAyuda"></p>
+        <div id="listaVoto" class="lista-voto"></div>
+        <div id="votoEspeciales" class="voto-especiales"></div>
+        <button class="btn btn-grande ancho" id="btnVotar" disabled>Votar</button>
+        <p id="votoEstado" class="voto-estado"></p>
       </div>
+      <button class="texto-btn oculto" id="btnForzarVoto">⏩ Terminar ya y contar los votos</button>
 
       <div class="panel centrado" id="panelMiCarta">
         <p class="nota">¿Se te olvidó? Mantén pulsado para ver tu carta.</p>
@@ -194,7 +205,7 @@
     <section id="pVotacion" class="pantalla">
       <div class="mesa-votos">
         <div class="mesa-cabecera">
-          <h2 id="votoTituloOl">¿Quién es el impostor?</h2>
+          <h2 id="votoTituloOl">Recuento de votos</h2>
           <div class="mesa-tiempo" id="votoTiempo"></div>
         </div>
         <div id="placas" class="placas"></div>
@@ -203,7 +214,6 @@
           <div id="miVoto" class="mi-voto"></div>
         </div>
       </div>
-      <button class="texto-btn oculto" id="btnForzarVoto">⏩ Cerrar la votación ya</button>
     </section>
 
     <!-- ============ EXPULSIÓN ============ -->
@@ -254,15 +264,6 @@
       </div>
       <p class="nota centrado" id="notaFinal"></p>
     </section>
-  </div>
-
-  <!-- Aviso de reunión de emergencia -->
-  <div id="alarma" class="alarma oculto">
-    <div class="alarma-caja">
-      <div class="alarma-icono" id="alarmaIcono">🚨</div>
-      <div class="alarma-texto" id="alarmaTexto">¡REUNIÓN DE EMERGENCIA!</div>
-      <div id="alarmaQuien" class="alarma-quien"></div>
-    </div>
   </div>
 
   <div id="aviso" class="aviso oculto" role="status"></div>

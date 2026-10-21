@@ -113,45 +113,89 @@ test('el reparto no espera a los que se han desconectado', () => {
   assert.equal(sala.fase, 'debate');
 });
 
-test('reunion de emergencia y votacion estilo Among Us', () => {
-  const { S, sala, ids, avanzar } = partida();
-  todosListos(S, sala, ids);
-  assert.ok(!S.reunion(sala.codigo, 'b').error);
-  assert.equal(sala.fase, 'votacion');
-  assert.equal(S.vista(sala, 'a').ronda.convocante, 'b');
+/** Vota cada uno lo que diga `que` (id -> lista) y deja que se acabe el tiempo. */
+function votarYContar(S, sala, avanzar, que) {
+  for (const [id, voto] of Object.entries(que)) {
+    const r = S.votar(sala.codigo, id, voto);
+    assert.ok(!r.error, `${id} no ha podido votar: ${r.error}`);
+  }
+  avanzar(sala.ajustes.tiempoDebate * 1000);
+  assert.equal(sala.fase, 'resultado');
+}
 
+const todosA = (sala, objetivo, menos = []) => Object.fromEntries(
+  sala.ronda.participantes.filter((id) => sala.ronda.vivos.has(id) && !menos.includes(id))
+    .map((id) => [id, id === objetivo ? ['saltar'] : [objetivo]]));
+
+test('se debate y se vota a la vez: al acabar el tiempo sale el mas votado', () => {
+  const { S, sala, ids, avanzar } = partida({ tiempoDebate: 120 });
+  todosListos(S, sala, ids);
+  assert.equal(sala.fase, 'debate');
   const [imp] = impostoresDe(sala);
-  S.votar(sala.codigo, 'a', imp);
-  assert.ok(S.votar(sala.codigo, 'a', 'saltar').error, 'deja votar dos veces');
+  S.votar(sala.codigo, 'a', [imp === 'a' ? 'b' : imp]);
   // Mientras se vota se sabe quien ha votado, pero no a quien
   const v = S.vista(sala, 'c');
   assert.deepEqual(v.ronda.votaron, ['a']);
-  assert.ok(!JSON.stringify(v).includes(`"a":"${imp}"`));
+  assert.equal(v.ronda.ultimoVoto, null);
+  // Aunque voten todos, se espera al reloj (por defecto)
+  for (const [id, voto] of Object.entries(todosA(sala, imp))) S.votar(sala.codigo, id, voto);
+  assert.equal(sala.fase, 'debate');
+  avanzar(119_000);
+  assert.equal(sala.fase, 'debate');
+  avanzar(1_000);
+  assert.equal(sala.fase, 'resultado');
+  assert.deepEqual(sala.ronda.ultimoVoto.expulsados, [imp]);
+});
 
-  ids.filter((id) => id !== 'a').forEach((id) => S.votar(sala.codigo, id, id === imp ? 'saltar' : imp));
-  assert.equal(sala.fase, 'resultado', 'con todos votados se cierra sola');
-  assert.equal(sala.ronda.ultimoVoto.expulsado, imp);
+test('se puede cambiar el voto hasta el final (o no, segun el ajuste)', () => {
+  const a = partida();
+  todosListos(a.S, a.sala, a.ids);
+  a.S.votar(a.sala.codigo, 'a', ['b']);
+  assert.ok(!a.S.votar(a.sala.codigo, 'a', ['c']).error);
+  assert.deepEqual(a.sala.ronda.votos.a, ['c']);
 
+  const b = partida({ cambiarVoto: false });
+  todosListos(b.S, b.sala, b.ids);
+  b.S.votar(b.sala.codigo, 'a', ['b']);
+  assert.ok(b.S.votar(b.sala.codigo, 'a', ['c']).error);
+});
+
+test('nadie se vota a si mismo ni vota a mas gente de la cuenta', () => {
+  const { S, sala, ids } = partida({ expulsados: 2 });
+  todosListos(S, sala, ids);
+  assert.ok(S.votar(sala.codigo, 'a', ['a']).error);
+  assert.ok(S.votar(sala.codigo, 'a', ['b', 'c', 'd']).error);
+  assert.ok(!S.votar(sala.codigo, 'a', ['b', 'c']).error);
+});
+
+test('si todos han votado se puede acabar antes (ajuste)', () => {
+  const { S, sala, ids } = partida({ acabarSiTodosVotan: true });
+  todosListos(S, sala, ids);
+  ids.forEach((id) => S.votar(sala.codigo, id, id === 'b' ? ['saltar'] : ['b']));
+  assert.equal(sala.fase, 'resultado');
+});
+
+test('expulsado el impostor: dice que lo era y el pillado intenta adivinar', () => {
+  const { S, sala, ids, avanzar } = partida();
+  todosListos(S, sala, ids);
+  const [imp] = impostoresDe(sala);
+  votarYContar(S, sala, avanzar, todosA(sala, imp));
   avanzar(DURACION.resultado);
   assert.equal(sala.fase, 'expulsion');
   assert.match(sala.ronda.expulsion.textos[0], /era el impostor/);
   avanzar(DURACION.expulsion);
-  // En clasico, el impostor pillado tiene su ultima oportunidad
   assert.equal(sala.fase, 'adivinar');
-  assert.ok(S.adivinar(sala.codigo, 'a', 'x').error || imp === 'a');
   S.adivinar(sala.codigo, imp, 'nada que ver');
-  assert.equal(sala.fase, 'final');
   assert.equal(sala.ronda.resultado.ganan, 'inocentes');
-  // Inocentes +1, y +1 extra por haber votado al impostor
-  assert.equal(sala.puntos.a, imp === 'a' ? undefined : 2);
+  const votante = ids.find((id) => id !== imp);
+  assert.equal(sala.puntos[votante], 2, 'inocente +1 y +1 por votar al impostor');
 });
 
 test('el impostor que adivina la palabra roba la victoria', () => {
   const { S, sala, ids, avanzar } = partida();
   todosListos(S, sala, ids);
-  S.reunion(sala.codigo, 'a');
   const [imp] = impostoresDe(sala);
-  ids.forEach((id) => S.votar(sala.codigo, id, imp));
+  votarYContar(S, sala, avanzar, todosA(sala, imp));
   avanzar(DURACION.resultado);
   avanzar(DURACION.expulsion);
   S.adivinar(sala.codigo, imp, sala.ronda.palabra.toUpperCase());
@@ -159,16 +203,51 @@ test('el impostor que adivina la palabra roba la victoria', () => {
   assert.equal(sala.puntos[imp], 3);
 });
 
-test('empate: no se expulsa a nadie y se sigue', () => {
-  const { S, sala, ids, avanzar } = partida({ adivinar: false });
+test('roles ocultos: no se sabe si el expulsado era impostor hasta el final', () => {
+  const { S, sala, ids, avanzar } = partida({ mostrarRol: false, adivinar: false });
   todosListos(S, sala, ids);
-  S.reunion(sala.codigo, 'a');
-  S.votar(sala.codigo, 'a', 'b');
-  S.votar(sala.codigo, 'b', 'a');
-  S.votar(sala.codigo, 'c', 'saltar');
-  S.votar(sala.codigo, 'd', 'saltar');
-  S.votar(sala.codigo, 'e', 'c');
-  assert.equal(sala.ronda.ultimoVoto.expulsado, null);
+  const [imp] = impostoresDe(sala);
+  const inocente = ids.find((id) => id !== imp);
+  votarYContar(S, sala, avanzar, todosA(sala, inocente));
+  avanzar(DURACION.resultado);
+  const v = S.vista(sala, 'c');
+  const texto = v.ronda.expulsion.textos.join(' ');
+  assert.match(texto, /ha sido expulsado/);
+  assert.ok(!/era (el|un)|Queda/.test(texto), texto);
+  assert.deepEqual(v.ronda.expulsion.roles, {});
+  avanzar(DURACION.expulsion);
+  assert.equal(sala.fase, 'debate');
+  // Al final si se ve todo
+  votarYContar(S, sala, avanzar, todosA(sala, imp));
+  avanzar(DURACION.resultado);
+  avanzar(DURACION.expulsion);
+  assert.equal(sala.fase, 'final');
+  const f = S.vista(sala, 'c').ronda.final;
+  assert.deepEqual(f.impostores, [imp]);
+  assert.equal(f.historialExpulsiones.length, 2);
+});
+
+test('varios expulsados por turno: salen los mas votados', () => {
+  const { S, sala, ids, avanzar } = partida({ expulsados: 2, impostores: 2, adivinar: false }, 11);
+  todosListos(S, sala, ids);
+  // a, b y c votan a d y e; d y e votan a a y b
+  votarYContar(S, sala, avanzar, { a: ['d', 'e'], b: ['d', 'e'], c: ['d', 'e'], d: ['a', 'b'], e: ['a', 'b'] });
+  assert.deepEqual(sala.ronda.ultimoVoto.expulsados.sort(), ['d', 'e']);
+});
+
+test('empate en el ultimo hueco: no sale ninguno de los empatados', () => {
+  const { S, sala, ids, avanzar } = partida({ expulsados: 2, adivinar: false });
+  todosListos(S, sala, ids);
+  // d con 3 votos sale; b y c empatan a 2 por el segundo hueco: no sale ninguno
+  votarYContar(S, sala, avanzar, { a: ['d', 'b'], b: ['d', 'c'], c: ['d', 'b'], d: ['c'], e: ['saltar'] });
+  assert.deepEqual(sala.ronda.ultimoVoto.expulsados, ['d']);
+});
+
+test('si gana el saltar, no sale nadie', () => {
+  const { S, sala, ids, avanzar } = partida();
+  todosListos(S, sala, ids);
+  votarYContar(S, sala, avanzar, { a: ['saltar'], b: ['saltar'], c: ['saltar'], d: ['a'], e: ['b'] });
+  assert.deepEqual(sala.ronda.ultimoVoto.expulsados, []);
   avanzar(DURACION.resultado);
   assert.match(sala.ronda.expulsion.textos[0], /Nadie/);
   avanzar(DURACION.expulsion);
@@ -176,74 +255,70 @@ test('empate: no se expulsa a nadie y se sigue', () => {
   assert.equal(sala.ronda.numDebate, 2);
 });
 
-test('expulsar inocentes hasta que los impostores son tantos como ellos', () => {
+test('si los impostores son la mitad, ganan directamente', () => {
   const { S, sala, ids, avanzar } = partida({ adivinar: false });
   todosListos(S, sala, ids);
   const [imp] = impostoresDe(sala);
   const inocentes = ids.filter((id) => id !== imp);
-  for (let vuelta = 0; vuelta < 3; vuelta++) {
-    S.reunion(sala.codigo, imp);
-    const victima = inocentes[vuelta];
-    sala.ronda.participantes.filter((id) => sala.ronda.vivos.has(id)).forEach((id) => S.votar(sala.codigo, id, victima));
+  // 5 jugadores, 1 impostor: hay que echar a 3 inocentes para que queden 1 contra 1
+  for (let vuelta = 0; vuelta < 3 && sala.fase !== 'final'; vuelta++) {
+    votarYContar(S, sala, avanzar, todosA(sala, inocentes[vuelta]));
     avanzar(DURACION.resultado);
     avanzar(DURACION.expulsion);
-    if (sala.fase === 'final') break;
   }
   assert.equal(sala.fase, 'final');
   assert.equal(sala.ronda.resultado.ganan, 'impostores');
+  assert.equal(sala.ronda.vivos.size, 2);
 });
 
-test('los expulsados ni votan ni convocan', () => {
+test('nunca se echa a tanta gente que no quede partida', () => {
+  const { S, sala, ids, avanzar } = partida({ expulsados: 3, adivinar: false });
+  todosListos(S, sala, ids);
+  // con 5 vivos, como mucho 3; con 3 vivos, como mucho 1
+  assert.equal(S.vista(sala, 'a').ronda.huecos, 3);
+  const [imp] = impostoresDe(sala);
+  const inocentes = ids.filter((id) => id !== imp);
+  votarYContar(S, sala, avanzar, Object.fromEntries(ids.map((id) => [id, inocentes.filter((x) => x !== id).slice(0, 2)])));
+  avanzar(DURACION.resultado);
+  if (sala.fase === 'expulsion') avanzar(DURACION.expulsion);
+  if (sala.fase === 'debate') assert.ok(S.vista(sala, imp).ronda.huecos <= sala.ronda.vivos.size - 2);
+});
+
+test('los expulsados no votan', () => {
   const { S, sala, ids, avanzar } = partida({ adivinar: false });
   todosListos(S, sala, ids);
   const [imp] = impostoresDe(sala);
   const victima = ids.find((id) => id !== imp);
-  S.reunion(sala.codigo, 'a' === victima ? 'b' : 'a');
-  ids.forEach((id) => S.votar(sala.codigo, id, victima));
+  votarYContar(S, sala, avanzar, todosA(sala, victima));
   avanzar(DURACION.resultado);
   avanzar(DURACION.expulsion);
-  assert.ok(S.reunion(sala.codigo, victima).error);
+  assert.ok(S.votar(sala.codigo, victima, [imp]).error);
 });
 
-test('se acaba el tiempo de debate y empieza la votacion sola', () => {
-  const { S, sala, ids, avanzar } = partida({ tiempoDebate: 60 });
+test('el anfitrion puede cerrar la votacion antes de tiempo', () => {
+  const { S, sala, ids } = partida();
   todosListos(S, sala, ids);
-  avanzar(59_000);
-  assert.equal(sala.fase, 'debate');
-  avanzar(1_000);
-  assert.equal(sala.fase, 'votacion');
-  assert.equal(sala.ronda.motivoVoto, 'tiempo');
-});
-
-test('se acaba el tiempo de votar: los que no votan no cuentan', () => {
-  const { S, sala, ids, avanzar } = partida({ tiempoVoto: 30 });
-  todosListos(S, sala, ids);
-  S.reunion(sala.codigo, 'a');
-  S.votar(sala.codigo, 'a', 'b');
-  avanzar(30_000);
+  S.votar(sala.codigo, 'b', ['c']);
+  assert.ok(S.forzar(sala.codigo, 'b').error, 'no es anfitrion');
+  S.forzar(sala.codigo, 'a');
   assert.equal(sala.fase, 'resultado');
-  assert.equal(sala.ronda.ultimoVoto.expulsado, 'b');
-  assert.equal(sala.ronda.ultimoVoto.noVotaron.length, 4);
 });
 
 test('votos anonimos: se ve cuantos, no quien', () => {
-  const { S, sala, ids } = partida({ votosAnonimos: true });
+  const { S, sala, ids, avanzar } = partida({ votosAnonimos: true });
   todosListos(S, sala, ids);
-  S.reunion(sala.codigo, 'a');
-  ids.forEach((id) => S.votar(sala.codigo, id, 'b'));
+  votarYContar(S, sala, avanzar, todosA(sala, 'b'));
   const det = S.vista(sala, 'c').ronda.ultimoVoto.detalle;
-  assert.equal(det.b.length, 5);
+  assert.equal(det.b.length, 4);
   assert.ok(det.b.every((x) => x === null));
 });
 
 test('ronda trampa sin impostor: votar "no hay impostor" da puntos a todos', () => {
-  // Se busca una semilla que saque la trampa de "ninguno"
   for (let semilla = 1; semilla < 400; semilla++) {
     const { S, sala, ids, avanzar } = partida({ trampa: true, probTrampa: 50 }, semilla);
     if (sala.ronda.trampa !== 'ninguno') continue;
     todosListos(S, sala, ids);
-    S.reunion(sala.codigo, 'a');
-    ids.forEach((id) => S.votar(sala.codigo, id, 'nadie'));
+    votarYContar(S, sala, avanzar, Object.fromEntries(ids.map((id) => [id, ['nadie']])));
     avanzar(DURACION.resultado);
     avanzar(DURACION.expulsion);
     assert.equal(sala.ronda.resultado.tipo, 'trampaAcertada');
@@ -256,8 +331,7 @@ test('ronda trampa sin impostor: votar "no hay impostor" da puntos a todos', () 
 test('"no hay impostor" no se puede votar sin rondas trampa', () => {
   const { S, sala, ids } = partida({ trampa: false });
   todosListos(S, sala, ids);
-  S.reunion(sala.codigo, 'a');
-  assert.ok(S.votar(sala.codigo, 'a', 'nadie').error);
+  assert.ok(S.votar(sala.codigo, 'a', ['nadie']).error);
 });
 
 test('las palabras con jugadores usan los nombres de la sala', () => {
@@ -277,10 +351,11 @@ test('acertar la palabra perdona tildes y mayusculas', () => {
 });
 
 test('los ajustes que vienen de fuera se limpian', () => {
-  const a = limpiarAjustes({ modo: 'hackeo', tiempoVoto: 999999, impostores: -3, categorias: ['Comida', 'Inventada'] },
+  const a = limpiarAjustes({ modo: 'hackeo', tiempoDebate: 999999, expulsados: 9, impostores: -3, categorias: ['Comida', 'Inventada'] },
     undefined, ['Comida']);
   assert.equal(a.modo, 'clasico');
-  assert.equal(a.tiempoVoto, 300);
+  assert.equal(a.tiempoDebate, 900);
+  assert.equal(a.expulsados, 3);
   assert.equal(a.impostores, 0);
   assert.deepEqual(a.categorias, ['Comida']);
 });
@@ -288,9 +363,8 @@ test('los ajustes que vienen de fuera se limpian', () => {
 test('otra ronda con los mismos jugadores', () => {
   const { S, sala, ids, avanzar } = partida({ adivinar: false });
   todosListos(S, sala, ids);
-  S.reunion(sala.codigo, 'a');
   const [imp] = impostoresDe(sala);
-  ids.forEach((id) => S.votar(sala.codigo, id, imp));
+  votarYContar(S, sala, avanzar, todosA(sala, imp));
   avanzar(DURACION.resultado);
   avanzar(DURACION.expulsion);
   assert.equal(sala.fase, 'final');
