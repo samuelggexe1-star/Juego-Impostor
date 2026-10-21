@@ -17,9 +17,9 @@
         <h1>IMPOSTOR <span class="etiqueta-online">ONLINE</span></h1>
         <p class="lead">Cada uno con su móvil.</p>
       </div>
-      <div class="cabecera-botones">
-        <span id="codigoCabecera" class="codigo-mini oculto"></span>
-      </div>
+      <button class="chip-perfil" id="chipPerfil" title="Mi perfil">
+        <span id="chipAvatar"></span><span id="chipNombre" class="chip-nombre">Crear perfil</span>
+      </button>
     </header>
 
     <div id="bannerRed" class="banner-red oculto">📡 Reconectando…</div>
@@ -37,10 +37,8 @@
 
     <!-- ============ ENTRADA ============ -->
     <section id="pEntrada" class="pantalla">
-      <div class="panel">
-        <label for="nombre">Tu nombre</label>
-        <input id="nombre" type="text" maxlength="16" autocomplete="off" placeholder="Ej: Samuel" />
-      </div>
+      <div class="panel tarjeta-perfil" id="tarjetaPerfil"></div>
+      <button class="btn btn-secundario ancho oculto" id="btnVolverSalaUltima"></button>
       <div class="panel">
         <h2>Unirse a una sala</h2>
         <form id="formUnirse" class="fila">
@@ -264,6 +262,34 @@
       </div>
       <p class="nota centrado" id="notaFinal"></p>
     </section>
+  </div>
+
+  <!-- ============ MI PERFIL ============ -->
+  <div class="modal oculto" id="modalPerfil" role="dialog" aria-modal="true" aria-labelledby="tPerfil">
+    <div class="modal-caja">
+      <div class="modal-cabecera"><h2 id="tPerfil">👤 Mi perfil</h2><button class="icono-btn" id="cerrarPerfil">✕</button></div>
+      <p class="nota">Se guarda en este móvil: la próxima vez entrarás directamente con él.</p>
+
+      <div class="perfil-foto">
+        <div id="perfilVistaPrevia" class="perfil-grande"></div>
+        <div class="perfil-botones-foto">
+          <label class="btn btn-secundario" for="inputFoto">📷 Poner foto</label>
+          <input type="file" id="inputFoto" accept="image/*" hidden />
+          <button class="texto-btn peligro" id="btnQuitarFoto">Quitar foto</button>
+        </div>
+      </div>
+
+      <label for="perfilNombre">Nombre</label>
+      <input id="perfilNombre" type="text" maxlength="16" autocomplete="off" placeholder="Ej: Samuel" />
+
+      <label>Color favorito <span class="nota">(si está libre en la sala)</span></label>
+      <div id="perfilColores" class="paleta"></div>
+
+      <h3>Tus estadísticas</h3>
+      <div id="perfilStats" class="stats"></div>
+
+      <button class="btn ancho" id="btnGuardarPerfil">Guardar</button>
+    </div>
   </div>
 
   <div id="aviso" class="aviso oculto" role="status"></div>

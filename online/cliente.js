@@ -4,7 +4,7 @@
 // conteste con el estado nuevo.
 
 import {
-  miId, miNombre, guardarNombre, enviar, escuchar, hayServidor,
+  miId, cargarPerfil, guardarPerfil, ultimaSala, recordarSala, enviar, escuchar, hayServidor,
   enlaceDeSala, salaDelEnlace, SERVIDOR_ONLINE
 } from './red.js';
 
@@ -53,6 +53,10 @@ const soyAnfitrion = () => estado && estado.anfitrion === miId();
 /** El muñequito. */
 function avatar(id, clases = '') {
   const j = jugador(id);
+  if (j.foto) {
+    const src = `/api/foto?sala=${encodeURIComponent(codigoActual)}&id=${encodeURIComponent(id)}&v=${j.foto}`;
+    return `<span class="foto-perfil ${clases}" style="--c:${COLORES[j.color] || '#888'}"><img src="${src}" alt="" loading="lazy" /></span>`;
+  }
   return `<span class="trip ${clases}" style="--c:${COLORES[j.color] || '#888'}" aria-hidden="true">` +
     '<i class="mochila"></i><i class="cuerpo"></i><i class="visor"></i></span>';
 }
@@ -97,8 +101,10 @@ const vibrar = (p) => { if (navigator.vibrate) navigator.vibrate(p); };
 
 // ------------------------------------------------------------------ arranque
 
+let perfil = cargarPerfil();
+
 async function arrancar() {
-  $('#nombre').value = miNombre();
+  pintarPerfil();
   const deEnlace = salaDelEnlace();
   if (deEnlace) $('#codigoUnirse').value = deEnlace;
 
@@ -111,43 +117,57 @@ async function arrancar() {
     return;
   }
   irA('pEntrada');
-  if (deEnlace && miNombre()) unirse(deEnlace);
+  if (!perfil.nombre) { abrirPerfil(true); return; }
+  // Recargar la pagina en plena partida te devuelve a tu sitio
+  if (deEnlace) unirse(deEnlace);
 }
 
-function pedirNombre() {
-  const n = $('#nombre').value.trim();
-  if (!n) { aviso('Escribe tu nombre primero'); $('#nombre').focus(); return null; }
-  guardarNombre(n);
-  return n;
+/** Sin nombre no se juega: abre el perfil para crearlo. */
+function tengoPerfil() {
+  if (perfil.nombre) return true;
+  abrirPerfil(true);
+  return false;
+}
+
+/** Lo que se manda al entrar: el color va aparte, la foto despues. */
+async function subirFoto(codigo) {
+  if (!perfil.foto) return;
+  try { await enviar({ tipo: 'perfil', sala: codigo, perfil: { foto: perfil.foto } }); } catch { /* sin foto, da igual */ }
 }
 
 async function crear() {
-  const n = pedirNombre();
-  if (!n) return;
+  if (!tengoPerfil()) return;
   try {
-    const r = await enviar({ tipo: 'crear', nombre: n });
-    conectar(r.codigo, n);
+    const r = await enviar({ tipo: 'crear', nombre: perfil.nombre, color: perfil.color });
+    await subirFoto(r.codigo);
+    conectar(r.codigo);
   } catch (e) { aviso(e.message); }
 }
 
 async function unirse(codigo) {
-  const n = pedirNombre();
-  if (!n) return;
+  if (!tengoPerfil()) return;
   const c = String(codigo || '').toUpperCase().replace(/[^A-Z]/g, '');
   if (c.length !== 4) { aviso('El código tiene 4 letras'); return; }
   try {
-    await enviar({ tipo: 'entrar', sala: c, nombre: n });
-    conectar(c, n);
-  } catch (e) { aviso(e.message); }
+    await enviar({ tipo: 'entrar', sala: c, nombre: perfil.nombre, color: perfil.color });
+    await subirFoto(c);
+    conectar(c);
+  } catch (e) {
+    aviso(e.message);
+    if (c === ultimaSala()) { recordarSala(''); pintarTarjeta(); }
+    history.replaceState(null, '', location.pathname);
+  }
 }
 
-function conectar(codigo, n) {
+function conectar(codigo) {
   if (conexion) conexion.cerrar();
   codigoActual = codigo;
+  recordarSala(codigo);
   history.replaceState(null, '', '?sala=' + codigo);
-  conexion = escuchar(codigo, n, {
+  conexion = escuchar(codigo, perfil.nombre, perfil.color, {
     estado: pintar,
     echado: () => {
+      recordarSala('');
       salirDeSala();
       aviso('El anfitrión te ha echado de la sala');
     },
@@ -163,7 +183,7 @@ function salirDeSala() {
   codigoActual = '';
   faseAnterior = null;
   history.replaceState(null, '', location.pathname);
-  $('#codigoCabecera').classList.add('oculto');
+  pintarPerfil();
   irA('pEntrada');
 }
 
@@ -176,14 +196,173 @@ async function mandar(tipo, datos = {}) {
   }
 }
 
+// ------------------------------------------------------------------ perfil
+
+/** Mi muñequito o mi foto, sin depender de estar en una sala. */
+function avatarPropio(clases = '') {
+  if (perfil.foto) {
+    return `<span class="foto-perfil ${clases}" style="--c:${COLORES[perfil.color] || '#888'}"><img src="${perfil.foto}" alt="" /></span>`;
+  }
+  return `<span class="trip ${clases}" style="--c:${COLORES[perfil.color] || COLORES.rojo}" aria-hidden="true">` +
+    '<i class="mochila"></i><i class="cuerpo"></i><i class="visor"></i></span>';
+}
+
+function pintarPerfil() {
+  $('#chipAvatar').innerHTML = avatarPropio('mini');
+  $('#chipNombre').textContent = perfil.nombre || 'Crear perfil';
+  pintarTarjeta();
+}
+
+function pintarTarjeta() {
+  const s = perfil.stats || {};
+  $('#tarjetaPerfil').innerHTML = perfil.nombre
+    ? `${avatarPropio('grande')}
+       <div class="tarjeta-texto"><b>Hola, ${esc(perfil.nombre)} 👋</b>
+       <small>${s.partidas ? `${s.partidas} partidas · ${s.victorias || 0} victorias` : 'Todavía no has jugado online'}</small></div>
+       <button class="texto-btn" id="btnEditarTarjeta">Editar</button>`
+    : `<div class="tarjeta-texto"><b>¿Quién eres?</b><small>Crea tu perfil para jugar. Se queda guardado en este móvil.</small></div>
+       <button class="btn" id="btnEditarTarjeta">Crear perfil</button>`;
+  $('#btnEditarTarjeta').addEventListener('click', () => abrirPerfil());
+
+  const ultima = ultimaSala();
+  const boton = $('#btnVolverSalaUltima');
+  boton.classList.toggle('oculto', !ultima || !!codigoActual);
+  boton.textContent = `↩ Volver a la sala ${ultima}`;
+}
+$('#btnVolverSalaUltima').addEventListener('click', () => unirse(ultimaSala()));
+
+let borradorPerfil = null;
+let perfilObligatorio = false;
+
+function abrirPerfil(obligatorio = false) {
+  perfilObligatorio = obligatorio;
+  borradorPerfil = { ...perfil, stats: { ...perfil.stats } };
+  if (!borradorPerfil.color) borradorPerfil.color = Object.keys(COLORES)[Math.floor(Math.random() * 15)];
+  $('#perfilNombre').value = perfil.nombre;
+  pintarModalPerfil();
+  $('#modalPerfil').classList.remove('oculto');
+  if (obligatorio) setTimeout(() => $('#perfilNombre').focus(), 100);
+}
+
+function pintarModalPerfil() {
+  const b = borradorPerfil;
+  const color = COLORES[b.color] || '#888';
+  $('#perfilVistaPrevia').innerHTML = b.foto
+    ? `<span class="foto-perfil enorme" style="--c:${color}"><img src="${b.foto}" alt="Tu foto" /></span>`
+    : `<span class="trip enorme" style="--c:${color}"><i class="mochila"></i><i class="cuerpo"></i><i class="visor"></i></span>`;
+  $('#btnQuitarFoto').classList.toggle('oculto', !b.foto);
+
+  // En una sala, los colores que ya tienen otros salen tachados
+  const ocupados = new Set((estado ? estado.jugadores : []).filter((j) => j.id !== miId()).map((j) => j.color));
+  $('#perfilColores').innerHTML = Object.entries(COLORES).map(([idColor, hex]) => `
+    <button class="muestra ${b.color === idColor ? 'sel' : ''} ${ocupados.has(idColor) ? 'ocupado' : ''}" data-color="${idColor}"
+      title="${idColor}${ocupados.has(idColor) ? ' (lo tiene otro)' : ''}">
+      <span class="trip mini" style="--c:${hex}"><i class="mochila"></i><i class="cuerpo"></i><i class="visor"></i></span>
+    </button>`).join('');
+  $$('#perfilColores [data-color]').forEach((m) => m.addEventListener('click', () => {
+    borradorPerfil.color = m.dataset.color;
+    pintarModalPerfil();
+  }));
+
+  const s = b.stats || {};
+  const pct = (a, t) => (t ? Math.round((a / t) * 100) + '%' : '—');
+  $('#perfilStats').innerHTML = `
+    <div><b>${s.partidas || 0}</b><small>partidas</small></div>
+    <div><b>${s.victorias || 0}</b><small>victorias (${pct(s.victorias || 0, s.partidas)})</small></div>
+    <div><b>${s.impostor || 0}</b><small>veces impostor</small></div>
+    <div><b>${s.victoriasImpostor || 0}</b><small>ganadas de impostor</small></div>`;
+}
+
+/** Recorta la foto en cuadrado y la deja pequeña antes de guardarla. */
+async function prepararFoto(archivo) {
+  const url = URL.createObjectURL(archivo);
+  try {
+    const img = await new Promise((ok, mal) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = () => mal(new Error('No se ha podido abrir esa imagen'));
+      i.src = url;
+    });
+    const lado = Math.min(img.naturalWidth, img.naturalHeight);
+    const lienzo = document.createElement('canvas');
+    lienzo.width = lienzo.height = 192;
+    const ctx = lienzo.getContext('2d');
+    ctx.drawImage(img, (img.naturalWidth - lado) / 2, (img.naturalHeight - lado) / 2, lado, lado, 0, 0, 192, 192);
+    for (const calidad of [0.82, 0.7, 0.55, 0.4]) {
+      const datos = lienzo.toDataURL('image/jpeg', calidad);
+      if (datos.length < 58000) return datos;
+    }
+    throw new Error('La foto es demasiado grande');
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+$('#inputFoto').addEventListener('change', async (e) => {
+  const archivo = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!archivo) return;
+  try {
+    borradorPerfil.foto = await prepararFoto(archivo);
+    pintarModalPerfil();
+  } catch (err) { aviso(err.message); }
+});
+$('#btnQuitarFoto').addEventListener('click', () => { borradorPerfil.foto = null; pintarModalPerfil(); });
+
+$('#btnGuardarPerfil').addEventListener('click', async () => {
+  const nombreNuevo = $('#perfilNombre').value.replace(/\s+/g, ' ').trim().slice(0, 16);
+  if (!nombreNuevo) { aviso('Ponte un nombre'); $('#perfilNombre').focus(); return; }
+  const antes = perfil;
+  perfil = { ...borradorPerfil, nombre: nombreNuevo };
+  if (!guardarPerfil(perfil)) {
+    // La foto es lo unico que puede no caber: se guarda sin ella
+    perfil.foto = antes.foto;
+    guardarPerfil(perfil);
+    aviso('No se ha podido guardar la foto en este móvil');
+  }
+  $('#modalPerfil').classList.add('oculto');
+  pintarPerfil();
+  if (codigoActual) {
+    const cambios = { nombre: perfil.nombre, color: perfil.color };
+    if (perfil.foto !== antes.foto) cambios.foto = perfil.foto;
+    await mandar('perfil', { perfil: cambios });
+  } else if (perfilObligatorio && salaDelEnlace()) {
+    unirse(salaDelEnlace());
+  }
+  aviso('✅ Perfil guardado');
+});
+
+$('#chipPerfil').addEventListener('click', () => abrirPerfil());
+$('#cerrarPerfil').addEventListener('click', () => $('#modalPerfil').classList.add('oculto'));
+$('#modalPerfil').addEventListener('click', (e) => { if (e.target.id === 'modalPerfil') $('#modalPerfil').classList.add('oculto'); });
+$('#perfilNombre').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#btnGuardarPerfil').click(); });
+
+/** Al acabar cada ronda se apunta en las estadisticas de este movil. */
+function apuntarEstadisticas() {
+  const r = estado.ronda;
+  if (!estado.yo.participante || !r.final) return;
+  const s = perfil.stats || (perfil.stats = {});
+  const clave = `${estado.codigo}-${r.num}`;
+  if (s.ultima === clave) return;
+  s.ultima = clave;
+  const soyImpostor = r.final.impostores.includes(miId()) && r.final.trampa !== 'todos';
+  const ganan = r.final.resultado.ganan;
+  const gane = ganan === 'todos' || (ganan === 'impostores' && soyImpostor) || (ganan === 'inocentes' && !soyImpostor);
+  s.partidas = (s.partidas || 0) + 1;
+  if (gane) s.victorias = (s.victorias || 0) + 1;
+  if (soyImpostor) s.impostor = (s.impostor || 0) + 1;
+  if (soyImpostor && gane) s.victoriasImpostor = (s.victoriasImpostor || 0) + 1;
+  guardarPerfil(perfil);
+}
+
 // ------------------------------------------------------------------ pintar
 
 function pintar(v) {
   estado = v;
   desfase = v.ahora - Date.now();
-  $('#codigoCabecera').textContent = v.codigo;
-  $('#codigoCabecera').classList.remove('oculto');
 
+  // En la sala, el chip de arriba enseña el color que te ha tocado de verdad
+  $('#chipAvatar').innerHTML = avatar(miId(), 'mini');
   const cambio = v.fase !== faseAnterior;
   if (cambio) alCambiarDeFase(faseAnterior, v.fase);
   faseAnterior = v.fase;
@@ -257,8 +436,12 @@ function pintarSala() {
       <span class="nom">${esc(j.nombre)}${j.id === yo ? ' <small>(tú)</small>' : ''}${j.id === v.anfitrion ? ' 👑' : ''}</span>
       ${v.puntos[j.id] ? `<span class="puntos-chip">★${v.puntos[j.id]}</span>` : ''}
       ${!j.conectado ? '<small class="nota">desconectado</small>' : ''}
+      ${soyAnfitrion() && j.id !== yo && j.foto ? `<button class="chip-x" data-quitarfoto="${esc(j.id)}" title="Quitarle la foto" aria-label="Quitarle la foto">🚫</button>` : ''}
       ${soyAnfitrion() && j.id !== yo ? `<button class="chip-x" data-echar="${esc(j.id)}" aria-label="Echar">✕</button>` : ''}
     </div>`).join('');
+  $$('[data-quitarfoto]').forEach((b) => b.addEventListener('click', () => {
+    if (confirm(`¿Quitarle la foto a ${nombre(b.dataset.quitarfoto)}?`)) mandar('quitarFoto', { quien: b.dataset.quitarfoto });
+  }));
   $$('[data-echar]').forEach((b) => b.addEventListener('click', () => {
     if (confirm(`¿Echar a ${nombre(b.dataset.echar)}?`)) mandar('echar', { quien: b.dataset.echar });
   }));
@@ -335,6 +518,7 @@ $('#btnEmpezar').addEventListener('click', () => mandar('empezar'));
 $('#btnIrse').addEventListener('click', async () => {
   if (!confirm('¿Salir de la sala?')) return;
   await mandar('irse');
+  recordarSala('');
   salirDeSala();
 });
 $('#btnCompartir').addEventListener('click', async () => {
@@ -737,6 +921,7 @@ function pintarFinal(recienLlegado) {
   $('#btnVolverSala').classList.toggle('oculto', !mando);
   $('#notaFinal').textContent = mando ? '' : `Esperando a que ${nombre(v.anfitrion)} empiece otra ronda…`;
 
+  apuntarEstadisticas();
   if (recienLlegado) {
     if (clase === 'victoria') sonidos.victoria();
     else if (clase === 'derrota') sonidos.derrota();

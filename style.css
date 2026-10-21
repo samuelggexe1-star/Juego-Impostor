@@ -101,6 +101,7 @@ code { background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 5px;
 .btn-grande { font-size: 1.15rem; padding: 16px; letter-spacing: 0.04em; }
 .ancho { width: 100%; }
 .boton-enlace { display: block; text-align: center; text-decoration: none; }
+.mini-foto { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 4px; }
 
 .icono-btn {
   width: 40px; height: 40px; border-radius: 12px; cursor: pointer;

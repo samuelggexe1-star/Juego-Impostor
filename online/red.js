@@ -2,9 +2,9 @@
 // salen, y nada mas (como en el billar): es lo unico que sobrevive a la wifi
 // del instituto.
 //
-// IDENTIDAD POR PESTAÑA. El "yo" va en sessionStorage: recargar la pagina te
-// devuelve a tu sitio, y dos pestañas en el mismo ordenador son dos jugadores
-// distintos (util para probar). El nombre si va en localStorage.
+// EL PERFIL VIVE EN EL MOVIL. El "yo", el nombre, el color y la foto se
+// guardan en localStorage: mañana abres el juego y sigues siendo tu, sin
+// cuentas ni contraseñas. Si se borran los datos del navegador, se pierde.
 
 /**
  * Cuando subas el servidor a Render, pon aqui su direccion, por ejemplo
@@ -13,25 +13,50 @@
  */
 export const SERVIDOR_ONLINE = '';
 
-const CLAVE_YO = 'impostor.yo';
-const CLAVE_NOMBRE = 'impostor.nombre';
+const CLAVE_YO = 'impostor.id';
+const CLAVE_PERFIL = 'impostor.perfil';
+const CLAVE_SALA = 'impostor.ultimaSala';
+
+let idEnMemoria = null; // por si el navegador no deja guardar (modo privado)
 
 export function miId() {
+  if (idEnMemoria) return idEnMemoria;
   let v = null;
-  try { v = sessionStorage.getItem(CLAVE_YO); } catch { /* modo privado */ }
+  try { v = localStorage.getItem(CLAVE_YO); } catch { /* modo privado */ }
   if (!v) {
     v = 'j' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
-    try { sessionStorage.setItem(CLAVE_YO, v); } catch { /* da igual */ }
+    try { localStorage.setItem(CLAVE_YO, v); } catch { /* da igual */ }
   }
+  idEnMemoria = v;
   return v;
 }
 
-export function miNombre() {
-  try { return localStorage.getItem(CLAVE_NOMBRE) || ''; } catch { return ''; }
+/** { nombre, color, foto (data URL o null), stats } */
+export function cargarPerfil() {
+  const vacio = { nombre: '', color: '', foto: null, stats: {} };
+  try {
+    const p = JSON.parse(localStorage.getItem(CLAVE_PERFIL));
+    if (p && typeof p === 'object') return { ...vacio, ...p, stats: { ...(p.stats || {}) } };
+    // Los que ya habian jugado tenian guardado solo el nombre
+    const viejo = localStorage.getItem('impostor.nombre');
+    if (viejo) return { ...vacio, nombre: viejo };
+  } catch { /* nada guardado */ }
+  return vacio;
 }
 
-export function guardarNombre(n) {
-  try { localStorage.setItem(CLAVE_NOMBRE, n); } catch { /* da igual */ }
+/** Devuelve false si no se ha podido guardar (por ejemplo, memoria llena). */
+export function guardarPerfil(perfil) {
+  try { localStorage.setItem(CLAVE_PERFIL, JSON.stringify(perfil)); return true; } catch { return false; }
+}
+
+export function ultimaSala() {
+  try { return localStorage.getItem(CLAVE_SALA) || ''; } catch { return ''; }
+}
+
+export function recordarSala(codigo) {
+  try {
+    if (codigo) localStorage.setItem(CLAVE_SALA, codigo); else localStorage.removeItem(CLAVE_SALA);
+  } catch { /* da igual */ }
 }
 
 /** Manda algo al servidor. Devuelve lo que conteste, o lanza con el motivo. */
@@ -56,9 +81,9 @@ export async function enviar(datos) {
  * el servidor manda el estado entero en cuanto alguien se engancha, asi que
  * volver de un bloqueo de pantalla no necesita nada especial.
  */
-export function escuchar(sala, nombre, manejadores) {
+export function escuchar(sala, nombre, color, manejadores) {
   const url = `/api/eventos?sala=${encodeURIComponent(sala)}` +
-    `&yo=${encodeURIComponent(miId())}&nombre=${encodeURIComponent(nombre || '')}`;
+    `&yo=${encodeURIComponent(miId())}&nombre=${encodeURIComponent(nombre || '')}&color=${encodeURIComponent(color || '')}`;
   const fuente = new EventSource(url);
   for (const [tipo, fn] of Object.entries(manejadores)) {
     if (tipo === 'abierto' || tipo === 'caido') continue;

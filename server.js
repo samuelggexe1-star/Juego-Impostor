@@ -81,7 +81,7 @@ function rutaSegura(url) {
 }
 
 /** Lee el cuerpo de un POST con tope, que viene de fuera. */
-function leerCuerpo(req, tope = 16 * 1024) {
+function leerCuerpo(req, tope = 96 * 1024) { // cabe una foto de perfil
   return new Promise((ok, mal) => {
     let datos = '';
     req.on('data', (trozo) => {
@@ -104,9 +104,10 @@ function abrirEventos(req, res, url) {
   const codigo = codigoDe(url.searchParams.get('sala'));
   const yo = id(url.searchParams.get('yo'));
   const nombre = url.searchParams.get('nombre') ? limpiarNombre(url.searchParams.get('nombre')) : '';
+  const color = String(url.searchParams.get('color') || '').slice(0, 20);
   if (!codigo || !yo) return json(res, 400, { error: 'faltan sala o yo' });
 
-  const r = Salas.entrar(codigo, yo, nombre);
+  const r = Salas.entrar(codigo, yo, nombre, color);
   if (r.error) return json(res, 404, r);
 
   res.writeHead(200, {
@@ -145,7 +146,9 @@ function abrirEventos(req, res, url) {
 // ------------------------------------------------------------------ el POST
 
 const ACCIONES = {
-  entrar: (c, yo, cu) => Salas.entrar(c, yo, cu.nombre),
+  entrar: (c, yo, cu) => Salas.entrar(c, yo, cu.nombre, cu.color),
+  perfil: (c, yo, cu) => Salas.perfil(c, yo, cu.perfil || {}),
+  quitarFoto: (c, yo, cu) => Salas.quitarFoto(c, yo, id(cu.quien)),
   irse: (c, yo) => Salas.irse(c, yo),
   echar: (c, yo, cu) => Salas.echar(c, yo, id(cu.quien)),
   ajustes: (c, yo, cu) => Salas.ajustar(c, yo, cu.ajustes || {}),
@@ -168,7 +171,7 @@ async function recibir(req, res) {
   if (!yo) return json(res, 400, { error: 'falta yo' });
 
   if (cuerpo.tipo === 'crear') {
-    const sala = Salas.crear(cuerpo.nombre, yo);
+    const sala = Salas.crear(cuerpo.nombre, yo, cuerpo.color);
     return json(res, 200, { codigo: sala.codigo });
   }
 
@@ -192,6 +195,13 @@ const servidor = http.createServer((req, res) => {
   }
   if (url.pathname === '/api/eventos' && req.method === 'GET') return abrirEventos(req, res, url);
   if (url.pathname === '/api/enviar' && req.method === 'POST') return recibir(req, res);
+  if (url.pathname === '/api/foto' && req.method === 'GET') {
+    const foto = Salas.fotoDe(codigoDe(url.searchParams.get('sala')), id(url.searchParams.get('id')));
+    if (!foto) return json(res, 404, { error: 'sin foto' });
+    // La URL lleva la version (?v=), asi que se puede guardar en cache sin miedo.
+    res.writeHead(200, { 'Content-Type': foto.tipo, 'Cache-Control': 'public, max-age=86400, immutable', 'X-Content-Type-Options': 'nosniff' });
+    return res.end(Buffer.from(foto.base64, 'base64'));
+  }
   if (url.pathname.startsWith('/api/')) return json(res, 404, { error: 'no existe' });
 
   const archivo = rutaSegura(req.url);

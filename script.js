@@ -1343,3 +1343,13 @@ $("#btnGuardarCategoria").addEventListener("click", () => {
    ARRANQUE
    ========================================================= */
 pintarInicio();
+
+// Si ya tienes perfil del modo online en este móvil, el botón lo dice
+try {
+  const perfilOnline = JSON.parse(localStorage.getItem("impostor.perfil"));
+  if (perfilOnline && perfilOnline.nombre) {
+    const foto = perfilOnline.foto && /^data:image\/jpeg;base64,/.test(perfilOnline.foto)
+      ? `<img class="mini-foto" src="${perfilOnline.foto}" alt="" />` : "🌐";
+    $(".boton-enlace").innerHTML = `${foto} Jugar online como <b>${esc(perfilOnline.nombre)}</b>`;
+  }
+} catch (e) { /* sin perfil */ }

@@ -55,6 +55,21 @@ export const AJUSTES_DEFECTO = {
 };
 
 const PISTAS = ['nada', 'categoria', 'parecida', 'ambas'];
+
+/** Tope de una foto de perfil ya recortada (en caracteres de base64, unos 45 KB). */
+export const TOPE_FOTO = 60000;
+
+/**
+ * Comprueba la foto que manda un movil. Solo se aceptan imagenes pequeñas en
+ * base64: el movil ya la recorta y la comprime antes de mandarla.
+ */
+export function validarFoto(datos) {
+  if (datos == null) return { foto: null };
+  const m = /^data:image\/(jpeg|webp|png);base64,([A-Za-z0-9+/]+={0,2})$/.exec(String(datos));
+  if (!m) return { error: 'Esa foto no vale' };
+  if (m[2].length > TOPE_FOTO) return { error: 'La foto es demasiado grande' };
+  return { foto: { tipo: 'image/' + m[1], base64: m[2] } };
+}
 const MODOS = ['clasico', 'undercover', 'preguntas'];
 
 // ----------------------------------------------------------------- utilidades
@@ -162,8 +177,10 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
     return sala.anfitrion === id;
   };
 
-  const colorLibre = (sala) => {
-    const usados = new Set(sala.jugadores.map((j) => j.color));
+  /** El color que prefiere, si esta libre; si no, el primero que quede. */
+  const colorLibre = (sala, preferido = null, id = null) => {
+    const usados = new Set(sala.jugadores.filter((j) => j.id !== id).map((j) => j.color));
+    if (preferido && COLORES.some((c) => c.id === preferido) && !usados.has(preferido)) return preferido;
     return (COLORES.find((c) => !usados.has(c.id)) || COLORES[0]).id;
   };
 
@@ -533,7 +550,11 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       codigo: sala.codigo,
       fase: sala.fase,
       anfitrion: sala.anfitrion,
-      jugadores: sala.jugadores.map((j) => ({ id: j.id, nombre: j.nombre, color: j.color, conectado: j.conectado })),
+      // La foto no va aqui (se mandaria en cada cambio): solo su version, y el
+      // movil la pide aparte una vez por /api/foto.
+      jugadores: sala.jugadores.map((j) => ({
+        id: j.id, nombre: j.nombre, color: j.color, conectado: j.conectado, foto: j.foto ? j.foto.v : null
+      })),
       ajustes: sala.ajustes,
       puntos: sala.puntos,
       fin: sala.fin,
@@ -613,7 +634,7 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
     salas,
     vista,
 
-    crear(nombre, id) {
+    crear(nombre, id, color) {
       const codigo = codigoLibre();
       const sala = {
         codigo,
@@ -628,12 +649,12 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
         fin: null,
         tocada: ahora()
       };
-      sala.jugadores.push({ id, nombre: limpiarNombre(nombre), color: colorLibre(sala), conectado: true });
+      sala.jugadores.push({ id, nombre: limpiarNombre(nombre), color: colorLibre(sala, color), conectado: true, foto: null });
       salas.set(codigo, sala);
       return sala;
     },
 
-    entrar(codigo, id, nombre) {
+    entrar(codigo, id, nombre, color) {
       const sala = buscar(codigo);
       if (!sala) return { error: 'Esa sala no existe. Revisa el código.' };
       tocar(sala);
@@ -647,8 +668,9 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       sala.jugadores.push({
         id,
         nombre: nombreLibre(sala, limpiarNombre(nombre), id),
-        color: colorLibre(sala),
-        conectado: true
+        color: colorLibre(sala, color),
+        conectado: true,
+        foto: null
       });
       repasarAnfitrion(sala);
       return { sala };
@@ -678,6 +700,42 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       repasarAnfitrion(sala);
       if (sala.ronda) { comprobarReparto(sala); comprobarVotos(sala); }
       return { sala };
+    },
+
+    /** Cambiar tu nombre, tu color o tu foto desde el perfil. */
+    perfil(codigo, id, datos = {}) {
+      const sala = buscar(codigo);
+      if (!sala) return { error: 'Esa sala no existe' };
+      const j = jugadorDe(sala, id);
+      if (!j) return { error: 'No estás en esta sala' };
+      if (datos.nombre) j.nombre = nombreLibre(sala, limpiarNombre(datos.nombre), id);
+      if (datos.color) j.color = colorLibre(sala, datos.color, id);
+      if ('foto' in datos) {
+        const f = validarFoto(datos.foto);
+        if (f.error) return { error: f.error };
+        j.foto = f.foto ? { ...f.foto, v: ahora() } : null;
+      }
+      tocar(sala);
+      return { sala };
+    },
+
+    /** El anfitrion le quita la foto a alguien (por si alguien se pasa de gracioso). */
+    quitarFoto(codigo, id, quien) {
+      const sala = buscar(codigo);
+      if (!sala) return { error: 'Esa sala no existe' };
+      if (!esAnfitrion(sala, id)) return { error: 'Solo el anfitrión puede hacer eso' };
+      const j = jugadorDe(sala, quien);
+      if (!j) return { error: 'Ese jugador no está' };
+      j.foto = null;
+      tocar(sala);
+      return { sala };
+    },
+
+    /** La foto de un jugador, para servirla como imagen. */
+    fotoDe(codigo, id) {
+      const sala = buscar(codigo);
+      const j = sala && jugadorDe(sala, id);
+      return j && j.foto ? j.foto : null;
     },
 
     echar(codigo, id, quien) {

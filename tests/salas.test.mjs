@@ -374,3 +374,58 @@ test('otra ronda con los mismos jugadores', () => {
   assert.equal(sala.ronda.num, 2);
   assert.notEqual(sala.ronda.palabra, palabra);
 });
+
+// ------------------------------------------------------------------ perfiles
+
+const FOTO = 'data:image/jpeg;base64,' + Buffer.from('foto de mentira').toString('base64');
+
+test('cada uno entra con su color favorito si esta libre', () => {
+  const { S } = conReloj();
+  const sala = S.crear('Ana', 'a', 'lima');
+  S.entrar(sala.codigo, 'b', 'Bea', 'lima');
+  S.entrar(sala.codigo, 'c', 'Cris', 'morado');
+  const colores = Object.fromEntries(sala.jugadores.map((j) => [j.id, j.color]));
+  assert.equal(colores.a, 'lima');
+  assert.notEqual(colores.b, 'lima', 'dos con el mismo color');
+  assert.equal(colores.c, 'morado');
+});
+
+test('la foto se guarda, pero en el estado solo va su version', () => {
+  const { S } = conReloj();
+  const sala = S.crear('Ana', 'a');
+  assert.ok(!S.perfil(sala.codigo, 'a', { foto: FOTO }).error);
+  const v = S.vista(sala, 'a');
+  assert.equal(typeof v.jugadores[0].foto, 'number');
+  assert.ok(!JSON.stringify(v).includes('base64'), 'la foto entera va en cada actualizacion');
+  assert.equal(S.fotoDe(sala.codigo, 'a').tipo, 'image/jpeg');
+});
+
+test('no se aceptan fotos raras ni enormes', () => {
+  const { S } = conReloj();
+  const sala = S.crear('Ana', 'a');
+  assert.ok(S.perfil(sala.codigo, 'a', { foto: 'javascript:alert(1)' }).error);
+  assert.ok(S.perfil(sala.codigo, 'a', { foto: 'data:image/svg+xml;base64,PHN2Zz4=' }).error);
+  assert.ok(S.perfil(sala.codigo, 'a', { foto: 'data:image/jpeg;base64,' + 'A'.repeat(70000) }).error);
+});
+
+test('cambiar nombre y color desde el perfil', () => {
+  const { S } = conReloj();
+  const sala = S.crear('Ana', 'a', 'rojo');
+  S.entrar(sala.codigo, 'b', 'Bea', 'azul');
+  S.perfil(sala.codigo, 'a', { nombre: 'Anita', color: 'azul' });
+  const a = sala.jugadores.find((j) => j.id === 'a');
+  assert.equal(a.nombre, 'Anita');
+  assert.equal(a.color, 'rojo', 'le ha quitado el color a otro');
+  S.perfil(sala.codigo, 'a', { color: 'verde' });
+  assert.equal(a.color, 'verde');
+});
+
+test('el anfitrion puede quitarle la foto a alguien', () => {
+  const { S } = conReloj();
+  const sala = S.crear('Ana', 'a');
+  S.entrar(sala.codigo, 'b', 'Bea');
+  S.perfil(sala.codigo, 'b', { foto: FOTO });
+  assert.ok(S.quitarFoto(sala.codigo, 'b', 'b').error, 'no es anfitrion');
+  S.quitarFoto(sala.codigo, 'a', 'b');
+  assert.equal(S.fotoDe(sala.codigo, 'b'), null);
+});
