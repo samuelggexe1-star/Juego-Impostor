@@ -35,9 +35,41 @@ Juego de fiesta para jugar con un solo móvil pasándolo de mano en mano. Todos 
 - No repite palabras hasta que salen todas.
 - Todo se guarda en el navegador.
 
+## 🌐 Modo online (cada uno con su móvil)
+
+Hecho igual que el billar: un servidor Node sin dependencias, salas con código de 4 letras y SSE + POST (funciona en la wifi del instituto, que bloquea los websockets).
+
+- **Sala de espera**: el anfitrión crea la sala, los demás entran con el código o con el enlace de invitación. Cada uno tiene su color de tripulante.
+- **Cada uno ve su carta en su móvil.** El servidor solo le manda a cada móvil SU carta, así que nadie puede mirar quién es el impostor.
+- **Debate** con orden de turnos y botón rojo de **reunión de emergencia** que puede pulsar cualquiera.
+- **Votación al estilo Among Us**: tocas a alguien y confirmas con ✔, sale el sello "HA VOTADO", puedes saltar el voto, hay tiempo límite y luego el recuento con quién votó a quién (o votos anónimos).
+- **Expulsión** en el espacio: "X era el impostor." / "Queda 1 impostor."
+- **VICTORIA / DERROTA** según tu bando, y marcador de la sala.
+- En el modo Preguntas cada uno escribe su respuesta en su móvil y se revelan todas a la vez.
+
+### Probarlo en tu ordenador
+
+```bash
+npm start        # y abrir http://localhost:8080/online.html
+npm test         # las pruebas de las salas
+```
+
+En la misma wifi, los demás pueden entrar con la IP de tu ordenador (por ejemplo `http://192.168.1.35:8080/online.html`).
+
+### Subirlo a Render
+
+1. En [render.com](https://render.com), *New → Blueprint* y elige este repositorio. Lee `render.yaml` y lo monta solo (plan gratis).
+2. Copia la dirección que te da (algo como `https://impostor-xxxx.onrender.com`).
+3. Ponla en `online/red.js`, en `SERVIDOR_ONLINE`, para que el botón "Jugar online" de GitHub Pages lleve directamente allí.
+
+El plan gratis se duerme si nadie entra en un rato: la primera vez tarda unos segundos en despertar.
+
 ## Archivos
 
 - `index.html`: pantallas del juego
 - `style.css`: estilos
 - `script.js`: lógica
+- `online.html`, `online/`: el modo online (cliente, lógica de salas y red)
+- `server.js`: el servidor del modo online
+- `tests/`: pruebas del modo online
 - `palabras.js`: categorías, palabras y preguntas. Para añadir palabras, escribe una línea nueva con el formato `"Palabra / Parecida"`.

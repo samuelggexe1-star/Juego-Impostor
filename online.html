@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>IMPOSTOR · Online</title>
+  <link rel="icon" href="logo.jpg" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="online/online.css" />
+</head>
+<body class="online">
+  <div class="app">
+    <header class="cabecera">
+      <a class="logo" href="index.html" title="Volver al modo de un móvil"><img src="logo.jpg" alt="logo" /></a>
+      <div class="cabecera-texto">
+        <h1>IMPOSTOR <span class="etiqueta-online">ONLINE</span></h1>
+        <p class="lead">Cada uno con su móvil.</p>
+      </div>
+      <div class="cabecera-botones">
+        <span id="codigoCabecera" class="codigo-mini oculto"></span>
+      </div>
+    </header>
+
+    <div id="bannerRed" class="banner-red oculto">📡 Reconectando…</div>
+
+    <!-- ============ SIN SERVIDOR ============ -->
+    <section id="pSinServidor" class="pantalla">
+      <div class="panel">
+        <h2>🌐 El modo online necesita el servidor</h2>
+        <p>Esta página se ha abierto sin el servidor del juego (por ejemplo, desde GitHub Pages o como archivo suelto).</p>
+        <p>Para jugar online hay que abrir la dirección del servidor en Render. Si ya lo tienes subido, pon su dirección en <code>online/red.js</code> (<code>SERVIDOR_ONLINE</code>) y este botón te llevará solo.</p>
+        <p class="nota">Para probar en tu ordenador: <code>npm start</code> y abre <code>http://localhost:8080/online.html</code>. En la misma wifi, los demás pueden entrar con la IP de tu ordenador.</p>
+        <a class="btn ancho" href="index.html" style="display:block;text-align:center;text-decoration:none;margin-top:12px">Jugar en un solo móvil</a>
+      </div>
+    </section>
+
+    <!-- ============ ENTRADA ============ -->
+    <section id="pEntrada" class="pantalla">
+      <div class="panel">
+        <label for="nombre">Tu nombre</label>
+        <input id="nombre" type="text" maxlength="16" autocomplete="off" placeholder="Ej: Samuel" />
+      </div>
+      <div class="panel">
+        <h2>Unirse a una sala</h2>
+        <form id="formUnirse" class="fila">
+          <input id="codigoUnirse" type="text" maxlength="4" autocomplete="off" autocapitalize="characters"
+                 placeholder="CÓDIGO" class="input-codigo" />
+          <button class="btn" type="submit">Entrar</button>
+        </form>
+      </div>
+      <div class="separador"><span>o</span></div>
+      <button class="btn btn-grande ancho" id="btnCrear">➕ Crear sala nueva</button>
+      <div class="fila-centrada">
+        <a class="texto-btn" href="index.html">📱 Jugar en un solo móvil</a>
+      </div>
+    </section>
+
+    <!-- ============ SALA DE ESPERA ============ -->
+    <section id="pSala" class="pantalla">
+      <div class="panel centrado">
+        <p class="pasa">Código de la sala</p>
+        <div class="codigo-grande" id="codigoSala">----</div>
+        <div class="fila fila-centrada">
+          <button class="btn btn-secundario" id="btnCompartir">🔗 Invitar</button>
+          <button class="btn btn-secundario" id="btnCopiarCodigo">📋 Copiar código</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-titulo"><h2>Tripulación <span class="pill" id="numSala">0</span></h2></div>
+        <div id="listaSala" class="lista-sala"></div>
+      </div>
+
+      <div class="panel" id="panelAjustesOnline">
+        <div class="panel-titulo"><h2>Ajustes</h2><span class="nota" id="notaAjustes"></span></div>
+
+        <div class="ajuste-grupo">
+          <span class="ajuste-etiqueta">Modo</span>
+          <div class="segmentado tres" id="olModo">
+            <button data-valor="clasico">🕵️ Clásico</button>
+            <button data-valor="undercover">🎭 Undercover</button>
+            <button data-valor="preguntas">💬 Preguntas</button>
+          </div>
+        </div>
+
+        <div class="ajuste-grupo" id="grupoCategorias">
+          <span class="ajuste-etiqueta">Categorías <span class="pill" id="olNumCategorias">0</span>
+            <button class="texto-btn" id="olTodas">Todas</button></span>
+          <div id="olCategorias" class="categorias compactas"></div>
+        </div>
+
+        <div class="ajustes-rejilla">
+          <label>Impostores
+            <select id="olImpostores">
+              <option value="0">Automático</option><option value="1">1</option><option value="2">2</option>
+              <option value="3">3</option><option value="4">4</option>
+            </select>
+          </label>
+          <label id="grupoPista">Pista del impostor
+            <select id="olPista">
+              <option value="nada">Nada</option><option value="categoria">Categoría</option>
+              <option value="parecida">Palabra parecida</option><option value="ambas">Las dos</option>
+            </select>
+          </label>
+          <label>Tiempo de debate
+            <select id="olTiempoDebate">
+              <option value="0">Sin límite</option><option value="60">1 min</option><option value="90">1:30</option>
+              <option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option>
+            </select>
+          </label>
+          <label>Tiempo para votar
+            <select id="olTiempoVoto">
+              <option value="30">30 s</option><option value="45">45 s</option><option value="60">1 min</option>
+              <option value="90">1:30</option><option value="120">2 min</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="interruptor"><input type="checkbox" id="olMostrarRol" /><span>Al expulsar, decir si era el impostor</span></label>
+        <label class="interruptor"><input type="checkbox" id="olVotosAnonimos" /><span>Votos anónimos</span></label>
+        <label class="interruptor"><input type="checkbox" id="olAdivinar" /><span>El impostor pillado puede robar la victoria adivinando la palabra</span></label>
+        <label class="interruptor"><input type="checkbox" id="olNoEmpieza" /><span>El impostor nunca empieza a hablar</span></label>
+        <label class="interruptor"><input type="checkbox" id="olTrampa" /><span>Rondas trampa (a veces no hay impostor, o lo son todos)</span></label>
+        <div id="grupoPreguntas">
+          <label class="interruptor"><input type="checkbox" id="olPicante" /><span>🌶️ Preguntas picantes</span></label>
+          <label class="interruptor"><input type="checkbox" id="olPregJugadores" /><span>👥 Preguntas sobre los jugadores</span></label>
+        </div>
+      </div>
+
+      <button class="btn btn-grande ancho" id="btnEmpezar">▶ EMPEZAR</button>
+      <p class="nota centrado" id="notaEmpezar"></p>
+      <div class="fila-centrada"><button class="texto-btn peligro" id="btnIrse">Salir de la sala</button></div>
+    </section>
+
+    <!-- ============ REPARTO ============ -->
+    <section id="pReparto" class="pantalla">
+      <div class="panel centrado">
+        <p class="pasa" id="repartoRonda">Ronda 1</p>
+        <h2 class="nombre-grande" id="repartoTitulo">Tu carta</h2>
+
+        <div id="cartaOnline" class="carta" tabindex="0" role="button" aria-label="Mantén pulsado para ver tu carta">
+          <div class="carta-dorso">
+            <span class="carta-icono">👆</span>
+            <span>Mantén pulsado para ver</span>
+            <small>Que no te vean la pantalla</small>
+          </div>
+          <div class="carta-frente" id="cartaOnlineFrente"></div>
+        </div>
+
+        <div id="olZonaRespuesta" class="zona-respuesta oculto">
+          <label for="olRespuesta">✍️ Tu respuesta (nadie la verá hasta que contestéis todos)</label>
+          <input id="olRespuesta" type="text" maxlength="80" autocomplete="off" spellcheck="false" enterkeyhint="send" placeholder="Tu respuesta…" />
+        </div>
+
+        <button class="btn btn-grande ancho" id="btnListo" disabled>Listo ✔</button>
+        <div id="esperaReparto" class="espera oculto"></div>
+        <p id="espectadorReparto" class="nota oculto">👀 Has entrado con la ronda empezada. Entrarás en la siguiente.</p>
+      </div>
+      <button class="texto-btn oculto" id="btnForzarReparto">⏩ Seguir sin esperar a los que faltan</button>
+    </section>
+
+    <!-- ============ DEBATE ============ -->
+    <section id="pDebate" class="pantalla">
+      <div class="panel centrado">
+        <p class="pasa" id="debateRondaOl">Ronda 1</p>
+        <h2 class="titulo-debate">Empieza <span id="olEmpieza" class="resalte">—</span></h2>
+        <p class="nota" id="olSentido"></p>
+        <div id="olOrden" class="orden-avatares"></div>
+        <div id="olCrono" class="crono-mini oculto"></div>
+        <p class="nota" id="olInstruccion"></p>
+        <div id="olRespuestasDebate"></div>
+      </div>
+
+      <div id="olFantasma" class="aviso-fantasma oculto">👻 Te han expulsado. Puedes mirar, pero ya no votas.</div>
+
+      <div class="centrado" id="zonaEmergencia">
+        <button class="boton-emergencia" id="btnEmergencia">
+          <span>REUNIÓN DE</span><b>EMERGENCIA</b>
+        </button>
+        <p class="nota">Cuando lo tengáis claro, cualquiera puede pulsarlo.</p>
+      </div>
+
+      <div class="panel centrado" id="panelMiCarta">
+        <p class="nota">¿Se te olvidó? Mantén pulsado para ver tu carta.</p>
+        <div id="cartaDebate" class="carta carta-mini" tabindex="0" role="button">
+          <div class="carta-dorso"><span>👆 Mantén pulsado</span></div>
+          <div class="carta-frente" id="cartaDebateFrente"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VOTACIÓN / RECUENTO ============ -->
+    <section id="pVotacion" class="pantalla">
+      <div class="mesa-votos">
+        <div class="mesa-cabecera">
+          <h2 id="votoTituloOl">¿Quién es el impostor?</h2>
+          <div class="mesa-tiempo" id="votoTiempo"></div>
+        </div>
+        <div id="placas" class="placas"></div>
+        <div class="mesa-pie">
+          <div id="filaSaltar" class="fila-saltar"></div>
+          <div id="miVoto" class="mi-voto"></div>
+        </div>
+      </div>
+      <button class="texto-btn oculto" id="btnForzarVoto">⏩ Cerrar la votación ya</button>
+    </section>
+
+    <!-- ============ EXPULSIÓN ============ -->
+    <section id="pExpulsion" class="pantalla pantalla-espacio">
+      <div class="espacio" id="espacio">
+        <div class="estrellas"></div>
+        <div class="estrellas lejos"></div>
+        <div id="flotante" class="flotante"></div>
+        <div class="texto-expulsion">
+          <p id="textoExpulsion1"></p>
+          <p id="textoExpulsion2" class="secundario"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ADIVINAR ============ -->
+    <section id="pAdivinar" class="pantalla">
+      <div class="panel centrado">
+        <div id="adivinaAvatar"></div>
+        <h2 id="adivinaTitulo">Última oportunidad</h2>
+        <p id="adivinaTexto" class="nota"></p>
+        <form id="formAdivinar" class="oculto">
+          <input id="olAdivinanza" type="text" maxlength="60" autocomplete="off" placeholder="¿Cuál era la palabra?" />
+          <button class="btn btn-grande ancho" type="submit" style="margin-top:10px">🎯 ¡Es esta!</button>
+        </form>
+        <div id="olCronoAdivinar" class="crono-mini"></div>
+      </div>
+    </section>
+
+    <!-- ============ FINAL ============ -->
+    <section id="pFinal" class="pantalla">
+      <div class="banner-final" id="bannerFinal">
+        <div class="banner-texto" id="bannerTexto">VICTORIA</div>
+        <div id="bannerEquipo" class="banner-equipo"></div>
+      </div>
+      <div class="panel centrado">
+        <h2 id="olFinalTitulo"></h2>
+        <p class="nota" id="olFinalSubtitulo"></p>
+        <div class="revelacion" id="olRevelacion"></div>
+      </div>
+      <div class="panel">
+        <h2>Marcador</h2>
+        <div id="olMarcador" class="marcador"></div>
+      </div>
+      <button class="btn btn-grande ancho" id="btnOtraOl">🔁 Otra ronda</button>
+      <div class="fila-centrada">
+        <button class="texto-btn" id="btnVolverSala">⚙️ Volver a la sala (cambiar ajustes)</button>
+      </div>
+      <p class="nota centrado" id="notaFinal"></p>
+    </section>
+  </div>
+
+  <!-- Aviso de reunión de emergencia -->
+  <div id="alarma" class="alarma oculto">
+    <div class="alarma-caja">
+      <div class="alarma-icono" id="alarmaIcono">🚨</div>
+      <div class="alarma-texto" id="alarmaTexto">¡REUNIÓN DE EMERGENCIA!</div>
+      <div id="alarmaQuien" class="alarma-quien"></div>
+    </div>
+  </div>
+
+  <div id="aviso" class="aviso oculto" role="status"></div>
+
+  <script src="palabras.js"></script>
+  <script type="module" src="online/cliente.js"></script>
+</body>
+</html>

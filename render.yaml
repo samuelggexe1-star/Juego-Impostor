@@ -1,0 +1,22 @@
+# Blueprint de Render (igual que el del billar). Conectas el repositorio y
+# Render lee este fichero y lo despliega solo.
+#
+# Es un servicio web normal de Node, sin base de datos: las salas viven en
+# memoria y se tiran solas a las dos horas sin nadie dentro. Un reinicio del
+# servicio se lleva las partidas en curso, pero una partida del impostor dura
+# diez minutos.
+#
+# El plan gratuito duerme el servicio tras un rato sin visitas y tarda unos
+# segundos en despertar con la primera peticion. Es normal, no es un fallo.
+services:
+  - type: web
+    name: impostor
+    runtime: node
+    plan: free
+    # Cero dependencias: no hay nada que instalar.
+    buildCommand: "echo sin dependencias"
+    startCommand: "node server.js"
+    healthCheckPath: /api/ping
+    envVars:
+      - key: NODE_VERSION
+        value: "20"

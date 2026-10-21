@@ -100,6 +100,7 @@ code { background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 5px;
 .btn-peligro { background: linear-gradient(90deg, var(--rojo), var(--rojo2)); color: #2a0610; box-shadow: 0 8px 18px rgba(244, 63, 94, 0.18); }
 .btn-grande { font-size: 1.15rem; padding: 16px; letter-spacing: 0.04em; }
 .ancho { width: 100%; }
+.boton-enlace { display: block; text-align: center; text-decoration: none; }
 
 .icono-btn {
   width: 40px; height: 40px; border-radius: 12px; cursor: pointer;
