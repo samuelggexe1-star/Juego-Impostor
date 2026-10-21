@@ -107,7 +107,7 @@ function abrirEventos(req, res, url) {
   const color = String(url.searchParams.get('color') || '').slice(0, 20);
   if (!codigo || !yo) return json(res, 400, { error: 'faltan sala o yo' });
 
-  const r = Salas.entrar(codigo, yo, nombre, color);
+  const r = Salas.entrar(codigo, yo, nombre, color, url.searchParams.get('espectador') === '1');
   if (r.error) return json(res, 404, r);
 
   res.writeHead(200, {
@@ -146,7 +146,8 @@ function abrirEventos(req, res, url) {
 // ------------------------------------------------------------------ el POST
 
 const ACCIONES = {
-  entrar: (c, yo, cu) => Salas.entrar(c, yo, cu.nombre, cu.color),
+  entrar: (c, yo, cu) => Salas.entrar(c, yo, cu.nombre, cu.color, !!cu.espectador),
+  modo: (c, yo, cu) => Salas.cambiarModo(c, yo, !!cu.espectador),
   perfil: (c, yo, cu) => Salas.perfil(c, yo, cu.perfil || {}),
   quitarFoto: (c, yo, cu) => Salas.quitarFoto(c, yo, id(cu.quien)),
   irse: (c, yo) => Salas.irse(c, yo),

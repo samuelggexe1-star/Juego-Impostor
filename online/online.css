@@ -341,3 +341,29 @@ select {
 .sala-publica-info small { color: var(--suave); font-size: .8rem; }
 .sala-publica-info .nombres { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .caras { display: flex; gap: 2px; margin-top: 2px; }
+
+/* ---------- Espectadores ---------- */
+.botones-publica { display: flex; flex-direction: column; gap: 6px; }
+.botones-publica .btn { padding: 8px 14px; }
+.centrado-flex { justify-content: center; }
+.espectadores-sala { margin-top: 10px; }
+.fila-avatares.izquierda { justify-content: flex-start; }
+.espectador-chip {
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px 4px 4px; border-radius: 999px;
+  background: rgba(255,255,255,.05); border: 1px dashed rgba(255,255,255,.25); font-size: .85rem;
+}
+.panel-espectador { border: 1px dashed rgba(251, 191, 36, 0.5); background: rgba(251, 191, 36, 0.05); text-align: left; }
+.esp-clave { background: rgba(0,0,0,.25); border-radius: 10px; padding: 8px 12px; margin-bottom: 6px; }
+.esp-clave small { display: block; color: var(--suave); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
+.esp-clave b { font-size: 1.1rem; color: var(--accent2); }
+.esp-clave.impostor b { color: var(--rojo2); }
+.aviso-trampa { margin: 6px 0; font-weight: 700; color: var(--amarillo); }
+.esp-lista { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.esp-fila { display: flex; align-items: flex-start; gap: 9px; padding: 7px 9px; border-radius: 10px; background: rgba(255,255,255,.04); }
+.esp-fila.es-imp { background: rgba(244, 63, 94, 0.12); }
+.esp-fila.fuera { opacity: .5; }
+.esp-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.esp-info small { color: var(--suave); font-size: .8rem; }
+.etiqueta-rol { font-size: .62rem; background: var(--rojo); color: #fff; padding: 2px 6px; border-radius: 5px; letter-spacing: .06em; vertical-align: middle; }
+.esp-respuesta { color: var(--text); font-weight: 700; }
+.ok { color: var(--accent2); }

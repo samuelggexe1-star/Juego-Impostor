@@ -477,3 +477,59 @@ test('las salas privadas siguen caducando', () => {
   S.limpiar();
   assert.ok(!S.salas.has(sala.codigo));
 });
+
+// ------------------------------------------------------------------ espectadores
+
+test('los espectadores no juegan la ronda y lo ven todo', () => {
+  const { S } = conReloj();
+  const sala = S.crear('Ana', 'a');
+  ['b', 'c'].forEach((id) => S.entrar(sala.codigo, id, id.toUpperCase()));
+  S.entrar(sala.codigo, 'x', 'Mirón', null, true);
+  S.empezar(sala.codigo, 'a');
+  assert.ok(!sala.ronda.participantes.includes('x'));
+  const v = S.vista(sala, 'x');
+  assert.equal(v.yo.participante, false);
+  assert.deepEqual(v.espectador.impostores, [...sala.ronda.impostores]);
+  assert.equal(v.espectador.palabra, sala.ronda.palabra);
+  assert.equal(Object.keys(v.espectador.cartas).length, 3);
+  // Los jugadores no reciben nada de eso
+  assert.equal(S.vista(sala, 'a').espectador, undefined);
+});
+
+test('los espectadores no cuentan para el minimo de jugadores', () => {
+  const { S } = conReloj();
+  const sala = S.crear('Ana', 'a');
+  S.entrar(sala.codigo, 'b', 'Bea');
+  S.entrar(sala.codigo, 'x', 'Mirón', null, true);
+  assert.ok(S.empezar(sala.codigo, 'a').error);
+});
+
+test('quien llega con la ronda en marcha la mira entera y juega la siguiente', () => {
+  const { S, sala, avanzar } = partida();
+  S.entrar(sala.codigo, 'z', 'Zoe');
+  const v = S.vista(sala, 'z');
+  assert.equal(v.yo.participante, false);
+  assert.ok(v.espectador && v.espectador.palabra);
+  sala.fase = 'final';
+  S.empezar(sala.codigo, 'a');
+  assert.ok(sala.ronda.participantes.includes('z'));
+});
+
+test('un jugador no se puede pasar a espectador en mitad de la ronda', () => {
+  const { S, sala } = partida();
+  assert.ok(S.cambiarModo(sala.codigo, 'b', true).error);
+  sala.fase = 'final';
+  assert.ok(!S.cambiarModo(sala.codigo, 'b', true).error);
+  assert.ok(!S.empezar(sala.codigo, 'a').error);
+  assert.ok(!sala.ronda.participantes.includes('b'));
+});
+
+test('el anfitrion puede hacer que los espectadores no vean nada', () => {
+  const { S } = conReloj();
+  const sala = S.crear('Ana', 'a');
+  ['b', 'c'].forEach((id) => S.entrar(sala.codigo, id, id.toUpperCase()));
+  S.entrar(sala.codigo, 'x', 'Mirón', null, true);
+  S.ajustar(sala.codigo, 'a', { espectadoresVenTodo: false });
+  S.empezar(sala.codigo, 'a');
+  assert.equal(S.vista(sala, 'x').espectador, undefined);
+});

@@ -81,9 +81,10 @@ export async function enviar(datos) {
  * el servidor manda el estado entero en cuanto alguien se engancha, asi que
  * volver de un bloqueo de pantalla no necesita nada especial.
  */
-export function escuchar(sala, nombre, color, manejadores) {
+export function escuchar(sala, nombre, color, espectador, manejadores) {
   const url = `/api/eventos?sala=${encodeURIComponent(sala)}` +
-    `&yo=${encodeURIComponent(miId())}&nombre=${encodeURIComponent(nombre || '')}&color=${encodeURIComponent(color || '')}`;
+    `&yo=${encodeURIComponent(miId())}&nombre=${encodeURIComponent(nombre || '')}&color=${encodeURIComponent(color || '')}` +
+    (espectador ? '&espectador=1' : '');
   const fuente = new EventSource(url);
   for (const [tipo, fn] of Object.entries(manejadores)) {
     if (tipo === 'abierto' || tipo === 'caido') continue;

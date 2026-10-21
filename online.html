@@ -53,6 +53,7 @@
           <button class="btn" type="submit">Entrar</button>
         </form>
       </div>
+      <label class="interruptor centrado-flex"><input type="checkbox" id="chkEspectador" /><span>👀 Entrar como espectador (para mirar y verlo todo)</span></label>
       <div class="separador"><span>o</span></div>
       <button class="btn btn-grande ancho" id="btnCrear">➕ Crear sala privada</button>
       <p class="nota centrado">Te da un código para pasárselo a tus amigos.</p>
@@ -75,6 +76,8 @@
       <div class="panel">
         <div class="panel-titulo"><h2>Tripulación <span class="pill" id="numSala">0</span></h2></div>
         <div id="listaSala" class="lista-sala"></div>
+        <div id="espectadoresSala" class="espectadores-sala"></div>
+        <button class="btn btn-secundario ancho" id="btnCambiarModo" style="margin-top:10px">👀 Pasar a espectador</button>
       </div>
 
       <div class="panel" id="panelAjustesOnline">
@@ -127,6 +130,7 @@
         <label class="interruptor"><input type="checkbox" id="olMostrarRol" /><span>Al expulsar, decir si era impostor (si no, se descubre al final de la partida)</span></label>
         <label class="interruptor"><input type="checkbox" id="olCambiarVoto" /><span>Se puede cambiar el voto hasta que acabe el tiempo</span></label>
         <label class="interruptor"><input type="checkbox" id="olAcabarTodos" /><span>Si todos han votado, se cuenta sin esperar al tiempo</span></label>
+        <label class="interruptor"><input type="checkbox" id="olEspectadoresVen" /><span>👀 Los espectadores lo ven todo (roles, palabras y votos)</span></label>
         <label class="interruptor"><input type="checkbox" id="olVotosAnonimos" /><span>Votos anónimos (en el recuento no se ve quién votó a quién)</span></label>
         <label class="interruptor"><input type="checkbox" id="olAdivinar" /><span>El impostor pillado puede robar la victoria adivinando la palabra</span></label>
         <label class="interruptor"><input type="checkbox" id="olNoEmpieza" /><span>El impostor nunca empieza a hablar</span></label>
@@ -166,6 +170,7 @@
         <div id="esperaReparto" class="espera oculto"></div>
         <p id="espectadorReparto" class="nota oculto">👀 Has entrado con la ronda empezada. Entrarás en la siguiente.</p>
       </div>
+      <div id="espReparto" class="panel panel-espectador oculto"></div>
       <button class="texto-btn oculto" id="btnForzarReparto">⏩ Seguir sin esperar a los que faltan</button>
     </section>
 
@@ -183,6 +188,8 @@
       </div>
 
       <div id="olFantasma" class="aviso-fantasma oculto">👻 Te han expulsado. Puedes mirar, pero ya no votas.</div>
+
+      <div id="espDebate" class="panel panel-espectador oculto"></div>
 
       <div class="panel" id="panelVoto">
         <div class="panel-titulo">

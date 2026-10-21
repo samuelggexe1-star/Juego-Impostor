@@ -16,6 +16,8 @@ const LETRAS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 export const LARGO_CODIGO = 4;
 export const MIN_JUGADORES = 3;
 export const MAX_JUGADORES = 15;
+/** Ademas de los jugadores, pueden mirar unos cuantos mas. */
+export const MAX_ESPECTADORES = 10;
 /** Una sala sin nadie conectado muere pasado este rato. */
 export const CADUCA_MS = 2 * 60 * 60 * 1000;
 /**
@@ -59,6 +61,7 @@ export const AJUSTES_DEFECTO = {
   mostrarRol: true,         // al expulsar se dice si era el impostor (si no, se sabe al final)
   cambiarVoto: true,        // se puede cambiar el voto hasta que se acabe el tiempo
   acabarSiTodosVotan: false, // si todos han votado, no se espera al reloj
+  espectadoresVenTodo: true, // los espectadores ven roles, palabras y votos
   trampa: false,            // a veces no hay impostor, o lo son todos
   probTrampa: 10,
   adivinar: true,           // el impostor pillado puede robar la victoria
@@ -140,7 +143,7 @@ export function limpiarAjustes(entrada = {}, anteriores = AJUSTES_DEFECTO, categ
   if ('tiempoDebate' in entrada) a.tiempoDebate = num(entrada.tiempoDebate, 30, 900, a.tiempoDebate);
   if ('expulsados' in entrada) a.expulsados = num(entrada.expulsados, 1, 3, a.expulsados);
   if ('probTrampa' in entrada) a.probTrampa = num(entrada.probTrampa, 1, 50, a.probTrampa);
-  for (const clave of ['votosAnonimos', 'mostrarRol', 'cambiarVoto', 'acabarSiTodosVotan', 'trampa', 'adivinar', 'noEmpieza', 'picante', 'preguntasJugadores']) {
+  for (const clave of ['votosAnonimos', 'mostrarRol', 'cambiarVoto', 'acabarSiTodosVotan', 'espectadoresVenTodo', 'trampa', 'adivinar', 'noEmpieza', 'picante', 'preguntasJugadores']) {
     if (clave in entrada) a[clave] = !!entrada[clave];
   }
   return a;
@@ -262,7 +265,7 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
   };
 
   const nuevaRonda = (sala) => {
-    const participantes = sala.jugadores.filter((j) => j.conectado).map((j) => j.id);
+    const participantes = sala.jugadores.filter((j) => j.conectado && !j.espectador).map((j) => j.id);
     const nombres = participantes.map((id) => nombreDe(sala, id));
     const a = sala.ajustes;
 
@@ -556,6 +559,24 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
 
   // ------------------------------------------------------------- la vista
 
+  /** Todo lo de la ronda, para los espectadores. */
+  const vistaEspectador = (sala) => {
+    const r = sala.ronda;
+    const cartas = {};
+    for (const id of r.participantes) cartas[id] = cartaDe(sala, id);
+    return {
+      palabra: r.palabra,
+      gemela: r.gemela,
+      categoria: r.categoria,
+      modo: r.modo,
+      impostores: [...r.impostores],
+      trampa: r.trampa,
+      cartas,
+      respuestas: r.respuestas,
+      votos: sala.fase === 'debate' ? r.votos : {}
+    };
+  };
+
   /** Lo que ve un jugador concreto. Nunca se manda el estado interno tal cual. */
   const vista = (sala, paraId = null) => {
     repasarAnfitrion(sala);
@@ -568,14 +589,15 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       // La foto no va aqui (se mandaria en cada cambio): solo su version, y el
       // movil la pide aparte una vez por /api/foto.
       jugadores: sala.jugadores.map((j) => ({
-        id: j.id, nombre: j.nombre, color: j.color, conectado: j.conectado, foto: j.foto ? j.foto.v : null
+        id: j.id, nombre: j.nombre, color: j.color, conectado: j.conectado, foto: j.foto ? j.foto.v : null,
+        espectador: !!j.espectador
       })),
       ajustes: sala.ajustes,
       puntos: sala.puntos,
       fin: sala.fin,
       ahora: ahora(),
       ronda: null,
-      yo: { id: paraId }
+      yo: { id: paraId, espectador: !!(jugadorDe(sala, paraId) || {}).espectador }
     };
     const r = sala.ronda;
     if (!r || sala.fase === 'sala') return v;
@@ -635,7 +657,11 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
         soyImpostor: r.modo === 'clasico' ? r.impostores.has(paraId) : null
       };
     } else {
-      v.yo = { id: paraId, participante: false };
+      const j = jugadorDe(sala, paraId);
+      v.yo = { id: paraId, participante: false, espectador: !!(j && j.espectador) };
+      // Quien no juega esta ronda (espectador, o llegado con la ronda en marcha)
+      // lo ve todo, si la sala lo permite.
+      if (j && sala.ajustes.espectadoresVenTodo) v.espectador = vistaEspectador(sala);
     }
     return v;
   };
@@ -681,7 +707,7 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       return sala;
     },
 
-    entrar(codigo, id, nombre, color) {
+    entrar(codigo, id, nombre, color, espectador = false) {
       const sala = buscar(codigo);
       if (!sala) return { error: 'Esa sala no existe. Revisa el código.' };
       tocar(sala);
@@ -693,12 +719,16 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       }
       // En la sala de espera, los que se fueron ya no guardan sitio ni nombre
       if (sala.fase === 'sala') sala.jugadores = sala.jugadores.filter((j) => j.conectado);
-      if (sala.jugadores.length >= MAX_JUGADORES) return { error: 'La sala está llena' };
+      const jugando = sala.jugadores.filter((j) => !j.espectador).length;
+      const mirando = sala.jugadores.length - jugando;
+      if (!espectador && jugando >= MAX_JUGADORES) return { error: 'La sala está llena de jugadores. Puedes entrar como espectador.' };
+      if (espectador && mirando >= MAX_ESPECTADORES) return { error: 'Ya hay demasiados espectadores' };
       sala.jugadores.push({
         id,
         nombre: nombreLibre(sala, limpiarNombre(nombre), id),
         color: colorLibre(sala, color),
         conectado: true,
+        espectador: !!espectador,
         foto: null
       });
       repasarAnfitrion(sala);
@@ -749,6 +779,25 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       return { sala };
     },
 
+    /**
+     * Pasar a mirar o a jugar. Quien esta jugando la ronda en marcha no puede
+     * pasarse a espectador hasta que acabe: si no, veria quien es el impostor.
+     */
+    cambiarModo(codigo, id, espectador) {
+      const sala = buscar(codigo);
+      if (!sala) return { error: 'Esa sala no existe' };
+      const j = jugadorDe(sala, id);
+      if (!j) return { error: 'No estás en esta sala' };
+      const enRonda = sala.ronda && !faseEs(sala, 'sala', 'final') && sala.ronda.participantes.includes(id);
+      if (espectador && enRonda) return { error: 'Espera a que acabe la ronda para pasar a espectador' };
+      if (!espectador && sala.jugadores.filter((x) => !x.espectador).length >= MAX_JUGADORES) {
+        return { error: 'Ya hay 15 jugadores' };
+      }
+      j.espectador = !!espectador;
+      tocar(sala);
+      return { sala };
+    },
+
     /** El anfitrion le quita la foto a alguien (por si alguien se pasa de gracioso). */
     quitarFoto(codigo, id, quien) {
       const sala = buscar(codigo);
@@ -794,8 +843,8 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       if (!sala) return { error: 'Esa sala no existe' };
       if (!esAnfitrion(sala, id)) return { error: 'Solo el anfitrión puede empezar' };
       if (!faseEs(sala, 'sala', 'final')) return { error: 'La ronda ya está en marcha' };
-      const conectados = sala.jugadores.filter((j) => j.conectado).length;
-      if (conectados < MIN_JUGADORES) return { error: `Hacen falta al menos ${MIN_JUGADORES} jugadores conectados` };
+      const conectados = sala.jugadores.filter((j) => j.conectado && !j.espectador).length;
+      if (conectados < MIN_JUGADORES) return { error: `Hacen falta al menos ${MIN_JUGADORES} jugadores (sin contar espectadores)` };
       if (sala.ajustes.modo !== 'preguntas' && !sala.ajustes.categorias.length) return { error: 'Elegid al menos una categoría' };
       tocar(sala);
       return nuevaRonda(sala);
@@ -944,12 +993,13 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
         return {
           codigo,
           nombre: sala.nombre,
-          jugadores: dentro.length,
+          jugadores: dentro.filter((j) => !j.espectador).length,
+          espectadores: dentro.filter((j) => j.espectador).length,
           max: MAX_JUGADORES,
           fase: sala.fase,
           modo: sala.ajustes.modo,
           // Solo nombre y color: para ver de un vistazo si estan tus amigos
-          quienes: dentro.slice(0, 8).map((j) => ({ nombre: j.nombre, color: j.color }))
+          quienes: dentro.filter((j) => !j.espectador).slice(0, 8).map((j) => ({ nombre: j.nombre, color: j.color }))
         };
       });
     }

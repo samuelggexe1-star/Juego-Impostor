@@ -145,14 +145,14 @@ async function crear() {
   } catch (e) { aviso(e.message); }
 }
 
-async function unirse(codigo) {
+async function unirse(codigo, espectador = $('#chkEspectador').checked) {
   if (!tengoPerfil()) return;
   const c = String(codigo || '').toUpperCase().replace(/[^A-Z]/g, '');
   if (c.length < 3) { aviso('El código tiene 4 letras'); return; }
   try {
-    await enviar({ tipo: 'entrar', sala: c, nombre: perfil.nombre, color: perfil.color });
+    await enviar({ tipo: 'entrar', sala: c, nombre: perfil.nombre, color: perfil.color, espectador });
     await subirFoto(c);
-    conectar(c);
+    conectar(c, espectador);
   } catch (e) {
     aviso(e.message);
     if (c === ultimaSala()) { recordarSala(''); pintarTarjeta(); }
@@ -160,12 +160,12 @@ async function unirse(codigo) {
   }
 }
 
-function conectar(codigo) {
+function conectar(codigo, espectador = false) {
   if (conexion) conexion.cerrar();
   codigoActual = codigo;
   recordarSala(codigo);
   history.replaceState(null, '', '?sala=' + codigo);
-  conexion = escuchar(codigo, perfil.nombre, perfil.color, {
+  conexion = escuchar(codigo, perfil.nombre, perfil.color, espectador, {
     estado: pintar,
     echado: () => {
       recordarSala('');
@@ -220,14 +220,18 @@ async function pintarPublicas() {
     return `<div class="sala-publica ${s.fase !== 'sala' ? 'jugando' : ''}">
       <div class="sala-publica-info">
         <b>${esc(s.nombre)}</b>
-        <small>${s.jugadores}/${s.max} · ${esc(estadoSala)}${s.jugadores ? ` · ${NOMBRES_MODO[s.modo] || ''}` : ''}</small>
+        <small>${s.jugadores}/${s.max}${s.espectadores ? ` (+${s.espectadores} 👀)` : ''} · ${esc(estadoSala)}${s.jugadores ? ` · ${NOMBRES_MODO[s.modo] || ''}` : ''}</small>
         ${caras ? `<span class="caras">${caras}</span>` : ''}
         ${s.quienes.length ? `<small class="nombres">${s.quienes.map((q) => esc(q.nombre)).join(', ')}</small>` : ''}
       </div>
-      <button class="btn" data-publica="${esc(s.codigo)}" ${llena ? 'disabled' : ''}>${llena ? 'Llena' : 'Entrar'}</button>
+      <div class="botones-publica">
+        <button class="btn" data-publica="${esc(s.codigo)}" ${llena ? 'disabled' : ''}>${llena ? 'Llena' : 'Jugar'}</button>
+        <button class="btn btn-secundario" data-mirar="${esc(s.codigo)}">👀 Mirar</button>
+      </div>
     </div>`;
   }).join('');
-  $$('[data-publica]').forEach((b) => b.addEventListener('click', () => unirse(b.dataset.publica)));
+  $$('[data-publica]').forEach((b) => b.addEventListener('click', () => unirse(b.dataset.publica, false)));
+  $$('[data-mirar]').forEach((b) => b.addEventListener('click', () => unirse(b.dataset.mirar, true)));
 }
 setInterval(pintarPublicas, 4000);
 
@@ -452,7 +456,7 @@ setInterval(pintarRelojes, 250);
 
 const AJUSTE_CASILLAS = {
   olMostrarRol: 'mostrarRol', olVotosAnonimos: 'votosAnonimos', olAdivinar: 'adivinar',
-  olCambiarVoto: 'cambiarVoto', olAcabarTodos: 'acabarSiTodosVotan',
+  olCambiarVoto: 'cambiarVoto', olAcabarTodos: 'acabarSiTodosVotan', olEspectadoresVen: 'espectadoresVenTodo',
   olNoEmpieza: 'noEmpieza', olTrampa: 'trampa', olPicante: 'picante', olPregJugadores: 'preguntasJugadores'
 };
 const AJUSTE_SELECTS = {
@@ -465,9 +469,11 @@ function pintarSala() {
   $('#codigoSala').textContent = v.codigo;
   $('#tituloSala').textContent = v.publica ? `${v.nombre} · sala pública` : 'Código de la sala';
   $('#btnCopiarCodigo').classList.toggle('oculto', v.publica);
-  $('#numSala').textContent = v.jugadores.filter((j) => j.conectado).length;
+  const jugando = v.jugadores.filter((j) => !j.espectador);
+  const mirando = v.jugadores.filter((j) => j.espectador && j.conectado);
+  $('#numSala').textContent = jugando.filter((j) => j.conectado).length;
 
-  $('#listaSala').innerHTML = v.jugadores.map((j) => `
+  $('#listaSala').innerHTML = jugando.map((j) => `
     <div class="fila-tripulante ${j.conectado ? '' : 'desconectado'}">
       ${avatar(j.id)}
       <span class="nom">${esc(j.nombre)}${j.id === yo ? ' <small>(tú)</small>' : ''}${j.id === v.anfitrion ? ' 👑' : ''}</span>
@@ -476,6 +482,12 @@ function pintarSala() {
       ${soyAnfitrion() && j.id !== yo && j.foto ? `<button class="chip-x" data-quitarfoto="${esc(j.id)}" title="Quitarle la foto" aria-label="Quitarle la foto">🚫</button>` : ''}
       ${soyAnfitrion() && j.id !== yo ? `<button class="chip-x" data-echar="${esc(j.id)}" aria-label="Echar">✕</button>` : ''}
     </div>`).join('');
+  $('#espectadoresSala').innerHTML = mirando.length
+    ? `<p class="nota">👀 Mirando:</p><div class="fila-avatares izquierda">${mirando.map((j) =>
+      `<span class="espectador-chip">${avatar(j.id, 'mini')} ${esc(j.nombre)}${j.id === yo ? ' (tú)' : ''}${j.id === v.anfitrion ? ' 👑' : ''}</span>`).join('')}</div>`
+    : '';
+  $('#btnCambiarModo').textContent = v.yo.espectador ? '🎮 Pasar a jugar' : '👀 Pasar a espectador';
+
   $$('[data-quitarfoto]').forEach((b) => b.addEventListener('click', () => {
     if (confirm(`¿Quitarle la foto a ${nombre(b.dataset.quitarfoto)}?`)) mandar('quitarFoto', { quien: b.dataset.quitarfoto });
   }));
@@ -485,7 +497,7 @@ function pintarSala() {
 
   pintarAjustes();
 
-  const conectados = v.jugadores.filter((j) => j.conectado).length;
+  const conectados = jugando.filter((j) => j.conectado).length;
   const mando = soyAnfitrion();
   $('#btnEmpezar').classList.toggle('oculto', !mando);
   $('#btnEmpezar').disabled = conectados < 3;
@@ -552,6 +564,7 @@ for (const [idEl, clave] of Object.entries(AJUSTE_CASILLAS)) {
 }
 
 $('#btnEmpezar').addEventListener('click', () => mandar('empezar'));
+$('#btnCambiarModo').addEventListener('click', () => mandar('modo', { espectador: !estado.yo.espectador }));
 $('#btnIrse').addEventListener('click', async () => {
   if (!confirm('¿Salir de la sala?')) return;
   await mandar('irse');
@@ -623,6 +636,64 @@ prepararCarta($('#cartaOnline'), () => {
 });
 prepararCarta($('#cartaDebate'));
 
+// ------------------------------------------------------------------ espectador
+
+/** El panel del que mira: roles, palabras, cartas, respuestas y votos de todos. */
+function pintarEspectador(contenedor) {
+  const v = estado;
+  const e = v.espectador;
+  const el = $(contenedor);
+  if (v.yo.participante) { el.classList.add('oculto'); return; }
+  el.classList.remove('oculto');
+  if (!e) {
+    el.innerHTML = '<h2>👀 Estás mirando</h2><p class="nota">En esta sala los espectadores no ven los roles.</p>';
+    return;
+  }
+  const r = v.ronda;
+  const esPregunta = e.modo === 'preguntas';
+  const fase = v.fase;
+  const quien = e.modo === 'undercover' ? 'UNDERCOVER' : 'IMPOSTOR';
+
+  let cabecera = esPregunta
+    ? `<div class="esp-clave"><small>Pregunta de todos</small><b>${esc(e.palabra)}</b></div>
+       <div class="esp-clave impostor"><small>Pregunta del impostor</small><b>${esc(e.gemela)}</b></div>`
+    : `<div class="esp-clave"><small>Palabra (${esc(e.categoria)})</small><b>${esc(e.palabra)}</b></div>
+       ${e.modo === 'undercover' ? `<div class="esp-clave impostor"><small>Palabra del undercover</small><b>${esc(e.gemela)}</b></div>` : ''}`;
+  if (e.trampa === 'ninguno') cabecera += '<p class="aviso-trampa">🤡 Ronda trampa: no hay ningún impostor</p>';
+  if (e.trampa === 'todos') cabecera += '<p class="aviso-trampa">😂 Ronda trampa: todos son impostores</p>';
+
+  const filas = r.participantes.map((id) => {
+    const imp = e.impostores.includes(id);
+    const carta = e.cartas[id];
+    const vivo = r.vivos.includes(id);
+    let detalle = '';
+    if (carta) {
+      if (carta.tipo === 'impostor') detalle = (carta.pistas || []).map((p) => `${esc(p.etiqueta)}: ${esc(p.texto)}`).join(' · ') || 'Sin pista';
+      else detalle = esc(carta.texto);
+    }
+    let extra = '';
+    if (fase === 'reparto') {
+      extra = r.listos.includes(id) ? '<span class="ok">✔ listo</span>' : '<span class="nota">mirando su carta…</span>';
+      if (esPregunta && e.respuestas[id]) extra += ` <span class="esp-respuesta">«${esc(e.respuestas[id])}»</span>`;
+    }
+    if (fase === 'debate' && vivo) {
+      const voto = e.votos[id];
+      extra = !voto ? '<span class="nota">sin votar</span>'
+        : voto[0] === 'saltar' ? '🗳️ salta'
+          : voto[0] === 'nadie' ? '🗳️ no hay impostor'
+            : `🗳️ ${voto.map((x) => esc(nombre(x))).join(', ')}`;
+    }
+    return `<div class="esp-fila ${imp ? 'es-imp' : ''} ${vivo ? '' : 'fuera'}">
+      ${avatar(id, vivo ? 'mini' : 'mini muerto')}
+      <div class="esp-info"><b>${esc(nombre(id))} ${imp ? `<span class="etiqueta-rol">${quien}</span>` : ''}</b>
+        <small>${detalle}</small>${extra ? `<small>${extra}</small>` : ''}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="panel-titulo"><h2>👀 Modo espectador</h2><span class="nota">Lo ves todo · no lo cuentes 🤫</span></div>
+    ${cabecera}<div class="esp-lista">${filas}</div>`;
+}
+
 // ------------------------------------------------------------------ reparto
 
 function pintarReparto() {
@@ -637,6 +708,9 @@ function pintarReparto() {
     $('#btnListo').classList.add('oculto');
     $('#olZonaRespuesta').classList.add('oculto');
     $('#espectadorReparto').classList.remove('oculto');
+    $('#espectadorReparto').textContent = v.yo.espectador
+      ? '👀 Estás de espectador.'
+      : '👀 Has entrado con la ronda empezada: mírala y jugarás en la siguiente.';
   } else {
     $('#cartaOnline').classList.remove('oculto');
     $('#espectadorReparto').classList.add('oculto');
@@ -662,6 +736,7 @@ function pintarReparto() {
   espera.innerHTML = `<p>${yo.listo ? '✔ ¡Listo! ' : ''}Esperando a los demás: <b>${listos}/${conectados.length}</b></p>
     <div class="fila-avatares">${r.participantes.map((id) => avatar(id, r.listos.includes(id) ? '' : 'apagado')).join('')}</div>
     ${yo.respuesta ? `<p class="nota">Tu respuesta: <b>${esc(yo.respuesta)}</b></p>` : ''}`;
+  pintarEspectador('#espReparto');
   $('#btnForzarReparto').classList.toggle('oculto', !(soyAnfitrion() && yo.listo && listos < r.participantes.length));
 }
 
@@ -723,6 +798,7 @@ function pintarDebate() {
     $('#cartaDebateFrente').classList.toggle('impostor', v.yo.carta && v.yo.carta.tipo === 'impostor');
   }
   pintarPanelVoto();
+  pintarEspectador('#espDebate');
 }
 
 /** Lo que llevo marcado en pantalla, antes de mandarlo. */
@@ -744,7 +820,7 @@ function pintarPanelVoto() {
   const clave = `${r.num}-${r.numDebate}`;
   if (clave !== claveVuelta) { claveVuelta = clave; borrador = mio ? [...mio] : []; }
 
-  $('#panelVoto').classList.toggle('oculto', !v.yo.participante && !r.vivos.length);
+  $('#panelVoto').classList.toggle('oculto', !v.yo.participante);
   const vivosConectados = r.vivos.filter((id) => jugador(id).conectado);
   $('#votoContador').textContent = `${r.votaron.length}/${vivosConectados.length} han votado`;
   $('#votoAyuda').textContent = (huecos === 1

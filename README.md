@@ -41,6 +41,7 @@ Montado igual que el billar: un servidor Node sin dependencias, salas con códig
 
 - **Perfil en cada móvil**: nombre, foto y color favorito. Se guarda en el móvil, así que al volver otro día sale arriba a la derecha y se puede editar. También guarda tus estadísticas (partidas, victorias, veces de impostor) y te ofrece volver a tu última sala.
 - **Salas públicas**: al entrar salen siempre *Sala 1*, *Sala 2* y *Sala 3*, con cuánta gente hay, quiénes son y si están jugando. Entra quien quiera; manda el primero que llega. Si llegas con la partida empezada, entras en la siguiente ronda. Cuando se quedan vacías un rato, vuelven a empezar de cero.
+- **Espectadores 👀**: se puede entrar a mirar (botón *Mirar* en las públicas, o la casilla al entrar con código) o pasarse a espectador desde la sala de espera. El espectador lo ve todo: la palabra, quién es el impostor, la carta de cada uno, las respuestas y los votos en directo. Quien llega con la ronda en marcha la ve así y juega desde la siguiente. El anfitrión puede desactivar que los espectadores vean los roles.
 - **Salas privadas**: el anfitrión crea una y comparte el código de 4 letras o el enlace de invitación.
 - **Cada uno ve su carta en su móvil.** El servidor solo le manda a cada móvil SU carta, así que nadie puede mirar quién es el impostor.
 - **Debate y votación a la vez**: hay un tiempo (1 a 10 min) para hablar y votar. Cuando se acaba, sale el más votado (si gana «saltar», no sale nadie). Se puede cambiar el voto hasta el final, o desactivarlo.
