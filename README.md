@@ -61,11 +61,11 @@ npm test         # las pruebas de las salas
 
 En la misma wifi, los demás pueden entrar con la IP de tu ordenador (por ejemplo `http://192.168.1.35:8080/online.html`).
 
-### Subirlo a Render
+### Dónde está
 
-1. En [render.com](https://render.com), *New → Blueprint* y elige este repositorio. Lee `render.yaml` y lo monta solo (plan gratis).
-2. Copia la dirección que te da (algo como `https://impostor-xxxx.onrender.com`).
-3. Ponla en `online/red.js`, en `SERVIDOR_ONLINE`, para que el botón "Jugar online" de GitHub Pages lleve directamente allí.
+**👉 https://impostor-sd7s.onrender.com/online.html**
+
+Está desplegado en Render con `render.yaml` (plan gratis). La dirección está puesta en `online/red.js` y en `script.js` (`SERVIDOR_ONLINE`), así que el botón "Jugar online" de GitHub Pages lleva directamente allí. Cada vez que se sube algo a `main`, Render lo vuelve a desplegar.
 
 El plan gratis se duerme si nadie entra en un rato: la primera vez tarda unos segundos en despertar.
 

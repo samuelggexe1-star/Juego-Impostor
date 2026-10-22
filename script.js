@@ -1344,6 +1344,12 @@ $("#btnGuardarCategoria").addEventListener("click", () => {
    ========================================================= */
 pintarInicio();
 
+// El modo online vive en Render: desde GitHub Pages el botón lleva directo allí
+const SERVIDOR_ONLINE = "https://impostor-sd7s.onrender.com";
+if (!location.href.startsWith(SERVIDOR_ONLINE)) {
+  $(".boton-enlace").href = SERVIDOR_ONLINE + "/online.html";
+}
+
 // Si ya tienes perfil del modo online en este móvil, el botón lo dice
 try {
   const perfilOnline = JSON.parse(localStorage.getItem("impostor.perfil"));

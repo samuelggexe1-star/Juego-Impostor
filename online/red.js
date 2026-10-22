@@ -11,7 +11,7 @@
  * 'https://impostor-xxxx.onrender.com'. Asi el boton "Jugar online" de la
  * version de GitHub Pages te lleva directamente alli.
  */
-export const SERVIDOR_ONLINE = '';
+export const SERVIDOR_ONLINE = 'https://impostor-sd7s.onrender.com';
 
 const CLAVE_YO = 'impostor.id';
 const CLAVE_PERFIL = 'impostor.perfil';
