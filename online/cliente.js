@@ -288,16 +288,15 @@ function pintarModalPerfil() {
   const color = COLORES[b.color] || '#888';
   $('#perfilVistaPrevia').innerHTML = b.foto
     ? `<span class="foto-perfil enorme" style="--c:${color}"><img src="${b.foto}" alt="Tu foto" /></span>`
-    : `<span class="trip enorme" style="--c:${color}"><i class="mochila"></i><i class="cuerpo"></i><i class="visor"></i></span>`;
+    : `<span class="circulo-perfil" style="--c:${color}">${esc(($('#perfilNombre').value.trim()[0] || '?').toUpperCase())}</span>`;
   $('#btnQuitarFoto').classList.toggle('oculto', !b.foto);
 
   // En una sala, los colores que ya tienen otros salen tachados
   const ocupados = new Set((estado ? estado.jugadores : []).filter((j) => j.id !== miId()).map((j) => j.color));
   $('#perfilColores').innerHTML = Object.entries(COLORES).map(([idColor, hex]) => `
     <button class="muestra ${b.color === idColor ? 'sel' : ''} ${ocupados.has(idColor) ? 'ocupado' : ''}" data-color="${idColor}"
-      title="${idColor}${ocupados.has(idColor) ? ' (lo tiene otro)' : ''}">
-      <span class="trip mini" style="--c:${hex}"><i class="mochila"></i><i class="cuerpo"></i><i class="visor"></i></span>
-    </button>`).join('');
+      title="${idColor}${ocupados.has(idColor) ? ' (lo tiene otro)' : ''}" aria-label="Color ${idColor}"
+      style="--c:${hex}"></button>`).join('');
   $$('#perfilColores [data-color]').forEach((m) => m.addEventListener('click', () => {
     borradorPerfil.color = m.dataset.color;
     pintarModalPerfil();
@@ -374,6 +373,8 @@ $('#btnGuardarPerfil').addEventListener('click', async () => {
 $('#chipPerfil').addEventListener('click', () => abrirPerfil());
 $('#cerrarPerfil').addEventListener('click', () => $('#modalPerfil').classList.add('oculto'));
 $('#modalPerfil').addEventListener('click', (e) => { if (e.target.id === 'modalPerfil') $('#modalPerfil').classList.add('oculto'); });
+// La inicial de la vista previa cambia mientras escribes el nombre
+$('#perfilNombre').addEventListener('input', () => { if (borradorPerfil && !borradorPerfil.foto) pintarModalPerfil(); });
 $('#perfilNombre').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#btnGuardarPerfil').click(); });
 
 /** Al acabar cada ronda se apunta en las estadisticas de este movil. */
