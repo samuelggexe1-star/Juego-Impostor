@@ -56,6 +56,9 @@ export const AJUSTES_DEFECTO = {
   impostores: 0,            // 0 = automatico segun jugadores
   pista: 'categoria',       // nada | categoria | parecida | ambas
   tiempoDebate: 180,        // segundos para debatir y votar a la vez
+  pistas: 'habladas',       // habladas | escritas (cada uno escribe su palabra por turnos)
+  vueltasPistas: 1,         // cuantas palabras escribe cada uno antes de votar
+  tiempoTurno: 30,          // segundos para escribir la palabra en tu turno
   expulsados: 1,            // cuantos se echan por turno (y a cuantos vota cada uno)
   votosAnonimos: false,     // en el recuento no se ve quien voto a quien
   mostrarRol: true,         // al expulsar se dice si era el impostor (si no, se sabe al final)
@@ -132,6 +135,9 @@ export function limpiarAjustes(entrada = {}, anteriores = AJUSTES_DEFECTO, categ
   };
   if (MODOS.includes(entrada.modo)) a.modo = entrada.modo;
   if (PISTAS.includes(entrada.pista)) a.pista = entrada.pista;
+  if (['habladas', 'escritas'].includes(entrada.pistas)) a.pistas = entrada.pistas;
+  if ('vueltasPistas' in entrada) a.vueltasPistas = num(entrada.vueltasPistas, 1, 3, a.vueltasPistas);
+  if ('tiempoTurno' in entrada) a.tiempoTurno = num(entrada.tiempoTurno, 10, 120, a.tiempoTurno);
   if (Array.isArray(entrada.categorias)) {
     const vistas = new Set();
     a.categorias = entrada.categorias
@@ -303,6 +309,9 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       horario: true,
       ultimoVoto: null,
       historialExpulsiones: [],
+      pistas: [],          // las palabras escritas: { id, texto, vuelta, tanda, saltado }
+      colaPistas: [],
+      posPista: 0,
       expulsion: null,
       acertantes: new Set(),
       adivina: null,
@@ -353,9 +362,56 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
     r.orden = orden.slice(pos).concat(orden.slice(0, pos));
     r.numDebate++;
     r.votos = {};
-    // Se debate y se vota a la vez: cuando se acaba el tiempo, se cuenta.
+    if (sala.ajustes.pistas === 'escritas' && r.modo !== 'preguntas') {
+      // Primero cada uno escribe su palabra, por turnos y en orden
+      r.colaPistas = [];
+      for (let t = 0; t < sala.ajustes.vueltasPistas; t++) r.colaPistas.push(...r.orden);
+      r.posPista = 0;
+      sala.fase = 'pistas';
+      siguientePista(sala);
+      return;
+    }
+    abrirDebate(sala);
+  };
+
+  /** Se debate y se vota a la vez: cuando se acaba el tiempo, se cuenta. */
+  const abrirDebate = (sala) => {
     sala.fase = 'debate';
     sala.fin = ahora() + sala.ajustes.tiempoDebate * 1000;
+  };
+
+  /** Pasa al siguiente que tenga que escribir (saltando a los que no estan). */
+  const siguientePista = (sala) => {
+    const r = sala.ronda;
+    while (r.posPista < r.colaPistas.length) {
+      const id = r.colaPistas[r.posPista];
+      if (r.vivos.has(id) && (jugadorDe(sala, id) || {}).conectado) break;
+      r.posPista++;
+    }
+    if (r.posPista >= r.colaPistas.length) { abrirDebate(sala); return; }
+    sala.fin = ahora() + sala.ajustes.tiempoTurno * 1000;
+  };
+
+  const apuntarPista = (sala, texto, saltado = false) => {
+    const r = sala.ronda;
+    const vivos = r.orden.length || 1;
+    r.pistas.push({
+      id: r.colaPistas[r.posPista],
+      texto: saltado ? null : texto,
+      saltado,
+      vuelta: r.numDebate,
+      tanda: Math.floor(r.posPista / vivos) + 1
+    });
+    r.posPista++;
+    siguientePista(sala);
+  };
+
+  /** Si se va el que tenia que escribir, no se espera a su reloj. */
+  const comprobarPistas = (sala) => {
+    if (sala.fase !== 'pistas') return;
+    const r = sala.ronda;
+    const id = r.colaPistas[r.posPista];
+    if (!(jugadorDe(sala, id) || {}).conectado) siguientePista(sala);
   };
 
   const vivosConectados = (sala) => sala.ronda.participantes
@@ -622,6 +678,13 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
         ? { expulsados: r.expulsion.expulsados, roles: r.expulsion.roles, textos: r.expulsion.textos }
         : null,
       expulsados: r.participantes.filter((id) => !r.vivos.has(id)),
+      pistas: r.pistas,
+      pistasEscritas: sala.ajustes.pistas === 'escritas' && r.modo !== 'preguntas',
+      turnoPista: fase === 'pistas' ? r.colaPistas[r.posPista] : null,
+      posPista: fase === 'pistas' ? r.posPista : null,
+      totalPistas: fase === 'pistas' ? r.colaPistas.length : null,
+      tandaPista: fase === 'pistas' ? Math.floor(r.posPista / (r.orden.length || 1)) + 1 : null,
+      tandasPista: sala.ajustes.vueltasPistas,
       // Las respuestas y la pregunta de verdad se ven cuando ya ha contestado todo el mundo.
       respuestas: pasadoReparto && r.modo === 'preguntas' ? r.respuestas : null,
       pregunta: pasadoReparto && r.modo === 'preguntas' ? r.palabra : null,
@@ -743,7 +806,7 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       tocar(sala);
       repasarAnfitrion(sala);
       // Si era el ultimo que faltaba, la partida no se queda esperandole.
-      if (sala.ronda) { comprobarReparto(sala); comprobarVotos(sala); }
+      if (sala.ronda) { comprobarReparto(sala); comprobarVotos(sala); comprobarPistas(sala); }
       return sala;
     },
 
@@ -758,7 +821,7 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
         if (j) j.conectado = false;
       }
       repasarAnfitrion(sala);
-      if (sala.ronda) { comprobarReparto(sala); comprobarVotos(sala); }
+      if (sala.ronda) { comprobarReparto(sala); comprobarVotos(sala); comprobarPistas(sala); }
       return { sala };
     },
 
@@ -886,8 +949,23 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       if (!sala) return { error: 'Esa sala no existe' };
       if (!esAnfitrion(sala, id)) return { error: 'Solo el anfitrión puede hacer eso' };
       if (sala.fase === 'reparto') empezarDebate(sala);
+      else if (sala.fase === 'pistas') abrirDebate(sala);
       else if (sala.fase === 'debate') cerrarVotacion(sala);
       else return { error: 'Ahora no hace falta' };
+      tocar(sala);
+      return { sala };
+    },
+
+    /** Escribir tu palabra cuando es tu turno. */
+    escribirPista(codigo, id, texto) {
+      const sala = buscar(codigo);
+      if (!sala) return { error: 'Esa sala no existe' };
+      if (sala.fase !== 'pistas') return { error: 'Ahora no toca escribir' };
+      const r = sala.ronda;
+      if (r.colaPistas[r.posPista] !== id) return { error: 'No es tu turno' };
+      const limpio = limpiarTexto(texto, 30);
+      if (!limpio) return { error: 'Escribe una palabra' };
+      apuntarPista(sala, limpio);
       tocar(sala);
       return { sala };
     },
@@ -950,6 +1028,7 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       for (const sala of salas.values()) {
         if (sala.fin == null || t < sala.fin) continue;
         switch (sala.fase) {
+          case 'pistas': apuntarPista(sala, null, true); break;
           case 'debate': cerrarVotacion(sala); break;
           case 'resultado': aplicarExpulsion(sala); break;
           case 'expulsion': trasExpulsion(sala); break;

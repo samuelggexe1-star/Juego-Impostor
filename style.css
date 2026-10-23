@@ -368,3 +368,201 @@ textarea { resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* =========================================================
+   ANIMACIONES Y DETALLES (compartido por el modo local y el online)
+   ========================================================= */
+
+/* Fondo vivo: manchas de color que se mueven despacio */
+body::before {
+  content: ''; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(35% 30% at 20% 25%, rgba(34, 193, 195, 0.16), transparent 70%),
+    radial-gradient(30% 28% at 80% 20%, rgba(244, 63, 94, 0.12), transparent 70%),
+    radial-gradient(40% 35% at 60% 85%, rgba(110, 231, 183, 0.12), transparent 70%),
+    radial-gradient(25% 25% at 15% 80%, rgba(167, 139, 250, 0.12), transparent 70%);
+  animation: manchas 26s ease-in-out infinite alternate;
+}
+@keyframes manchas {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  50% { transform: translate(4%, -3%) rotate(8deg) scale(1.08); }
+  100% { transform: translate(-3%, 4%) rotate(-6deg) scale(1.02); }
+}
+
+/* Título con brillo que pasa */
+h1 {
+  background: linear-gradient(100deg, var(--text) 40%, #fff 50%, var(--accent2) 60%, var(--text) 70%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: brillo-titulo 5s ease-in-out infinite;
+}
+h1 .etiqueta-online { -webkit-text-fill-color: #fff; }
+@keyframes brillo-titulo { 0%, 60% { background-position: 100% 0; } 100% { background-position: -50% 0; } }
+
+/* Cambio de pantalla: cada bloque entra un poco después del anterior */
+.pantalla.activa { animation: none; }
+.pantalla.activa > * { animation: subir .5s cubic-bezier(.2, .8, .2, 1) both; }
+.pantalla.activa > *:nth-child(2) { animation-delay: .06s; }
+.pantalla.activa > *:nth-child(3) { animation-delay: .12s; }
+.pantalla.activa > *:nth-child(4) { animation-delay: .18s; }
+.pantalla.activa > *:nth-child(5) { animation-delay: .24s; }
+.pantalla.activa > *:nth-child(n+6) { animation-delay: .3s; }
+@keyframes subir { from { opacity: 0; transform: translateY(18px) scale(.98); } }
+
+/* Botones: se hunden al pulsar y los grandes tienen un brillo que pasa */
+.btn { position: relative; overflow: hidden; }
+.btn:active:not(:disabled) { transform: scale(.96); }
+.btn-grande::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-20deg); animation: destello 3.8s ease-in-out infinite;
+}
+.btn-grande:disabled::after { display: none; }
+@keyframes destello { 0%, 70% { left: -60%; } 100% { left: 130%; } }
+
+/* Listas: cuando cambia lo que hay, cada cosa entra con un saltito y en cascada.
+   (JS pone la clase .animar solo cuando cambia la lista, no en cada repintado) */
+.animar > *, .orden span, .marcador-fila, .historial-item { animation: aparecer .38s cubic-bezier(.3, 1.4, .5, 1) both; }
+.animar > *:nth-child(2) { animation-delay: .03s; } .animar > *:nth-child(3) { animation-delay: .06s; }
+.animar > *:nth-child(4) { animation-delay: .09s; } .animar > *:nth-child(5) { animation-delay: .12s; }
+.animar > *:nth-child(6) { animation-delay: .15s; } .animar > *:nth-child(n+7) { animation-delay: .18s; }
+@keyframes aparecer { from { opacity: 0; transform: scale(.85) translateY(6px); } }
+@keyframes marcar { 50% { transform: scale(1.07); } }
+.categoria-btn, .chip { transition: transform .2s cubic-bezier(.3, 1.6, .5, 1), background .2s ease; }
+.categoria-btn:active, .modo:active { transform: scale(.94); }
+
+/* Ventanas: entran desde abajo con rebote */
+.modal { animation: fundido .2s ease both; }
+.modal-caja { animation: emerger .35s cubic-bezier(.2, 1.3, .4, 1) both; }
+@keyframes fundido { from { opacity: 0; } }
+@keyframes emerger { from { opacity: 0; transform: translateY(40px) scale(.94); } }
+
+.aviso { animation: tostada .35s cubic-bezier(.2, 1.3, .4, 1) both; }
+@keyframes tostada { from { opacity: 0; transform: translate(-50%, 20px) scale(.9); } }
+
+/* Interruptores bonitos (sustituyen a las casillas) */
+input.switch, .interruptor input[type="checkbox"] {
+  -webkit-appearance: none; appearance: none; flex: none; cursor: pointer;
+  width: 46px !important; height: 26px !important; border-radius: 999px; margin: 0;
+  background: rgba(255, 255, 255, 0.16); position: relative;
+  transition: background .25s ease;
+}
+input.switch::after, .interruptor input[type="checkbox"]::after {
+  content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .35);
+  transition: transform .3s cubic-bezier(.3, 1.5, .5, 1);
+}
+input.switch:checked, .interruptor input[type="checkbox"]:checked { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+input.switch:checked::after, .interruptor input[type="checkbox"]:checked::after { transform: translateX(20px); }
+input.switch:disabled, .interruptor input[type="checkbox"]:disabled { opacity: .55; cursor: default; }
+.interruptor { align-items: center; }
+
+/* Bloques de ajustes con icono (modo local) */
+.ajuste-bloque {
+  background: rgba(255, 255, 255, 0.04); border: 1px solid var(--borde); border-radius: 14px;
+  padding: 12px 14px; margin-top: 12px; animation: aparecer .35s ease both;
+}
+.ajuste-bloque h3 { margin: 0 0 8px; display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 1rem; }
+.ajuste-bloque h3 span { font-size: 1.2rem; }
+.ajuste-bloque .interruptor { margin: 8px 0; justify-content: space-between; flex-direction: row-reverse; }
+.ajuste-bloque .interruptor span { flex: 1; font-size: .92rem; }
+
+.presets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+.preset {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left;
+  padding: 10px 12px; border-radius: 12px; cursor: pointer; font-family: inherit; color: var(--text);
+  background: linear-gradient(135deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+  border: 1px solid var(--borde); transition: transform .15s ease, border-color .15s ease;
+}
+.preset span { font-size: 1.4rem; line-height: 1.1; }
+.preset b { font-size: .95rem; }
+.preset small { color: var(--suave); font-size: .74rem; }
+.preset:hover { transform: translateY(-2px); border-color: var(--accent); }
+.preset:active { transform: scale(.96); }
+.preset.sel { border-color: var(--accent2); background: rgba(34, 193, 195, 0.16); box-shadow: inset 0 0 0 1px var(--accent2); }
+
+/* Pistas escritas (también en el modo local) */
+.muro-pistas { display: flex; flex-direction: column; gap: 8px; }
+.muro-vuelta { margin: 6px 0 0; font-size: .74rem; text-transform: uppercase; letter-spacing: .12em; color: var(--suave); }
+.muro-fila { display: flex; flex-wrap: wrap; gap: 8px; }
+.pista {
+  --c: var(--accent);
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--borde); border-left: 4px solid var(--c);
+}
+.pista-textos { display: flex; flex-direction: column; line-height: 1.1; }
+.pista-textos small { font-size: .7rem; color: var(--suave); }
+.pista-textos b { font-size: 1.05rem; }
+.pista.saltada { opacity: .55; }
+.pista.saltada b { font-weight: 500; font-style: italic; font-size: .9rem; }
+.pista.nueva { animation: volar .7s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes volar {
+  0% { opacity: 0; transform: translateY(60px) rotate(-8deg) scale(.6); }
+  60% { opacity: 1; transform: translateY(-6px) rotate(2deg) scale(1.06); }
+  100% { transform: none; }
+}
+.muro-pistas.compacto .pista { padding: 4px 10px 4px 4px; }
+.muro-pistas.compacto .pista-textos b { font-size: .95rem; }
+.inicial {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; flex: none;
+  background: var(--c); color: #fff; font-weight: 800; font-size: .8rem; text-shadow: 0 1px 0 rgba(0,0,0,.4);
+}
+
+/* Contador con − y + */
+.contador-mini { display: inline-flex; align-items: center; gap: 4px; background: rgba(0, 0, 0, 0.25); border-radius: 999px; padding: 3px; }
+.contador-mini button {
+  width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; font-size: 1.1rem; font-weight: 800;
+  background: rgba(255, 255, 255, 0.1); color: var(--text); transition: transform .12s ease;
+}
+.contador-mini button:active:not(:disabled) { transform: scale(.85); }
+.contador-mini button:disabled { opacity: .3; cursor: default; }
+.contador-mini b { min-width: 56px; text-align: center; font-size: .95rem; font-variant-numeric: tabular-nums; }
+.valor-contador.salta { animation: salta .35s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes salta { 40% { transform: scale(1.35); color: var(--amarillo); } }
+
+/* =========================================================
+   PANTALLA DE PISTAS ESCRITAS
+   ========================================================= */
+.panel-turno { position: relative; overflow: hidden; }
+.panel-turno.mi-turno { border-color: var(--amarillo); box-shadow: 0 0 0 1px var(--amarillo), 0 10px 40px rgba(251, 191, 36, 0.15); }
+.panel-turno.mi-turno::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 50% 30%, rgba(251, 191, 36, 0.14), transparent 60%);
+  animation: latir 2s ease-in-out infinite;
+}
+.turno-avatar { margin: 6px auto 4px; height: 124px; display: grid; place-items: center; }
+.turno-avatar .foco { position: relative; display: inline-grid; place-items: center; }
+.turno-avatar .foco::before {
+  content: ''; position: absolute; inset: -14px; border-radius: 50%;
+  border: 3px dashed rgba(251, 191, 36, 0.6); animation: girar 9s linear infinite;
+}
+.turno-avatar.entra .foco { animation: entra-turno .6s cubic-bezier(.2, 1.5, .4, 1) both; }
+@keyframes entra-turno { from { opacity: 0; transform: translateX(-80px) rotate(-25deg) scale(.5); } }
+.titulo-turno { font-size: 1.5rem; margin: 6px 0 10px; }
+
+.anillo-tiempo { position: relative; width: 64px; height: 64px; margin: 0 auto 12px; }
+.anillo-tiempo svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.anillo-tiempo circle { fill: none; stroke-width: 4; }
+.anillo-tiempo .fondo { stroke: rgba(255, 255, 255, 0.12); }
+.anillo-tiempo .arco { stroke: var(--accent2); stroke-linecap: round; transition: stroke-dashoffset .25s linear, stroke .3s ease; }
+.anillo-tiempo span { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 900; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.anillo-tiempo.urgente .arco { stroke: var(--rojo2); }
+.anillo-tiempo.urgente { animation: latir .6s ease-in-out infinite; }
+
+.form-pista { display: flex; flex-direction: column; gap: 10px; animation: subir .4s ease both; }
+.form-pista input { text-align: center; font-size: 1.4rem !important; font-weight: 700; padding: 14px !important; border-color: var(--amarillo) !important; }
+
+.escribiendo { display: flex; justify-content: center; gap: 6px; padding: 12px; }
+.escribiendo span { width: 10px; height: 10px; border-radius: 50%; background: var(--suave); animation: punto-salta 1.2s ease-in-out infinite; }
+.escribiendo span:nth-child(2) { animation-delay: .15s; }
+.escribiendo span:nth-child(3) { animation-delay: .3s; }
+@keyframes punto-salta { 0%, 60%, 100% { transform: translateY(0); opacity: .4; } 30% { transform: translateY(-9px); opacity: 1; } }
+
+
+.inicial.grande { width: 96px; height: 96px; font-size: 2.6rem; box-shadow: inset 0 -6px 0 rgba(0,0,0,.2); }
+.ajuste-fila-local { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; font-size: .92rem; }
+#panelEscribir .turno-avatar { height: 110px; }
+
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
+}

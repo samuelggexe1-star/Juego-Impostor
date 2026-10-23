@@ -81,64 +81,9 @@
       </div>
 
       <div class="panel" id="panelAjustesOnline">
-        <div class="panel-titulo"><h2>Ajustes</h2><span class="nota" id="notaAjustes"></span></div>
-
-        <div class="ajuste-grupo">
-          <span class="ajuste-etiqueta">Modo</span>
-          <div class="segmentado tres" id="olModo">
-            <button data-valor="clasico">🕵️ Clásico</button>
-            <button data-valor="undercover">🎭 Undercover</button>
-            <button data-valor="preguntas">💬 Preguntas</button>
-          </div>
-        </div>
-
-        <div class="ajuste-grupo" id="grupoCategorias">
-          <span class="ajuste-etiqueta">Categorías <span class="pill" id="olNumCategorias">0</span>
-            <button class="texto-btn" id="olTodas">Todas</button></span>
-          <div id="olCategorias" class="categorias compactas"></div>
-        </div>
-
-        <div class="ajustes-rejilla">
-          <label>Impostores
-            <select id="olImpostores">
-              <option value="0">Automático</option><option value="1">1</option><option value="2">2</option>
-              <option value="3">3</option><option value="4">4</option>
-            </select>
-          </label>
-          <label id="grupoPista">Pista del impostor
-            <select id="olPista">
-              <option value="nada">Nada</option><option value="categoria">Categoría</option>
-              <option value="parecida">Palabra parecida</option><option value="ambas">Las dos</option>
-            </select>
-          </label>
-          <label>Tiempo para debatir y votar
-            <select id="olTiempoDebate">
-              <option value="60">1 min</option><option value="90">1:30</option><option value="120">2 min</option>
-              <option value="180">3 min</option><option value="240">4 min</option><option value="300">5 min</option>
-              <option value="420">7 min</option><option value="600">10 min</option>
-            </select>
-          </label>
-          <label>Expulsados por turno
-            <select id="olExpulsados">
-              <option value="1">1 (cada uno vota a 1)</option>
-              <option value="2">2 (cada uno vota a 2)</option>
-              <option value="3">3 (cada uno vota a 3)</option>
-            </select>
-          </label>
-        </div>
-
-        <label class="interruptor"><input type="checkbox" id="olMostrarRol" /><span>Al expulsar, decir si era impostor (si no, se descubre al final de la partida)</span></label>
-        <label class="interruptor"><input type="checkbox" id="olCambiarVoto" /><span>Se puede cambiar el voto hasta que acabe el tiempo</span></label>
-        <label class="interruptor"><input type="checkbox" id="olAcabarTodos" /><span>Si todos han votado, se cuenta sin esperar al tiempo</span></label>
-        <label class="interruptor"><input type="checkbox" id="olEspectadoresVen" /><span>👀 Los espectadores lo ven todo (roles, palabras y votos)</span></label>
-        <label class="interruptor"><input type="checkbox" id="olVotosAnonimos" /><span>Votos anónimos (en el recuento no se ve quién votó a quién)</span></label>
-        <label class="interruptor"><input type="checkbox" id="olAdivinar" /><span>El impostor pillado puede robar la victoria adivinando la palabra</span></label>
-        <label class="interruptor"><input type="checkbox" id="olNoEmpieza" /><span>El impostor nunca empieza a hablar</span></label>
-        <label class="interruptor"><input type="checkbox" id="olTrampa" /><span>Rondas trampa (a veces no hay impostor, o lo son todos)</span></label>
-        <div id="grupoPreguntas">
-          <label class="interruptor"><input type="checkbox" id="olPicante" /><span>🌶️ Preguntas picantes</span></label>
-          <label class="interruptor"><input type="checkbox" id="olPregJugadores" /><span>👥 Preguntas sobre los jugadores</span></label>
-        </div>
+        <div class="panel-titulo"><h2>⚙️ Ajustes</h2><span class="nota" id="notaAjustes"></span></div>
+        <div id="presets" class="presets"></div>
+        <div id="ajustesOnline" class="ajustes-secciones"></div>
       </div>
 
       <button class="btn btn-grande ancho" id="btnEmpezar">▶ EMPEZAR</button>
@@ -174,6 +119,42 @@
       <button class="texto-btn oculto" id="btnForzarReparto">⏩ Seguir sin esperar a los que faltan</button>
     </section>
 
+    <!-- ============ PISTAS ESCRITAS ============ -->
+    <section id="pPistas" class="pantalla">
+      <div class="panel centrado panel-turno">
+        <p class="pasa" id="pistasTanda">Palabra 1 de 1</p>
+        <div id="turnoAvatar" class="turno-avatar"></div>
+        <h2 class="titulo-turno" id="turnoTitulo">Turno de —</h2>
+        <div class="anillo-tiempo" id="anilloTiempo">
+          <svg viewBox="0 0 44 44" aria-hidden="true"><circle class="fondo" cx="22" cy="22" r="19"/><circle class="arco" id="arcoTiempo" cx="22" cy="22" r="19"/></svg>
+          <span id="turnoSegundos">30</span>
+        </div>
+        <form id="formPista" class="form-pista oculto">
+          <input id="inputPista" type="text" maxlength="30" autocomplete="off" spellcheck="false" enterkeyhint="send"
+                 placeholder="Escribe UNA palabra…" />
+          <button class="btn btn-grande ancho" type="submit">Enviar ✍️</button>
+          <p class="nota">Ni muy obvia (el impostor la pillaría) ni muy rara (parecerás el impostor).</p>
+        </form>
+        <div id="escribiendo" class="escribiendo oculto"><span></span><span></span><span></span></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-titulo"><h2>✍️ Palabras</h2><span class="pill" id="contadorPistas">0</span></div>
+        <div id="muroPistas" class="muro-pistas"></div>
+      </div>
+
+      <div id="espPistas" class="panel panel-espectador oculto"></div>
+
+      <div class="panel centrado" id="panelCartaPistas">
+        <p class="nota">¿Se te olvidó? Mantén pulsado para ver tu carta.</p>
+        <div id="cartaPistas" class="carta carta-mini" tabindex="0" role="button">
+          <div class="carta-dorso"><span>👆 Mantén pulsado</span></div>
+          <div class="carta-frente" id="cartaPistasFrente"></div>
+        </div>
+      </div>
+      <button class="texto-btn oculto" id="btnSaltarPistas">⏩ Saltar a la votación</button>
+    </section>
+
     <!-- ============ DEBATE ============ -->
     <section id="pDebate" class="pantalla">
       <div class="panel centrado">
@@ -185,6 +166,7 @@
         <div class="crono-barra"><div id="olCronoBarra"></div></div>
         <p class="nota" id="olInstruccion"></p>
         <div id="olRespuestasDebate"></div>
+        <div id="muroDebate" class="muro-pistas compacto"></div>
       </div>
 
       <div id="olFantasma" class="aviso-fantasma oculto">👻 Te han expulsado. Puedes mirar, pero ya no votas.</div>

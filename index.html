@@ -152,6 +152,23 @@
         <p class="nota" id="debateInstruccion"></p>
       </div>
 
+      <div class="panel centrado panel-turno oculto" id="panelEscribir">
+        <p class="pasa" id="escribirProgreso">Turno 1 de 4</p>
+        <p class="pasa">Pasa el iPad a</p>
+        <div id="escribirInicial" class="turno-avatar"></div>
+        <h2 class="titulo-turno" id="escribirNombre">—</h2>
+        <form id="formEscribir" class="form-pista">
+          <input id="inputEscribir" type="text" maxlength="30" autocomplete="off" spellcheck="false" enterkeyhint="send" placeholder="Escribe UNA palabra…" />
+          <button class="btn btn-grande ancho" type="submit">Enviar ✍️</button>
+        </form>
+        <button class="texto-btn" id="btnSaltarTurno">Saltar este turno</button>
+      </div>
+
+      <div class="panel oculto" id="panelMuroLocal">
+        <div class="panel-titulo"><h2>✍️ Palabras</h2><span class="pill" id="contadorLocal">0</span></div>
+        <div id="muroLocal" class="muro-pistas"></div>
+      </div>
+
       <div class="panel centrado" id="panelCrono">
         <div class="crono" id="crono">03:00</div>
         <div class="crono-barra"><div id="cronoBarra"></div></div>
@@ -246,49 +263,81 @@
     <div class="modal-caja">
       <div class="modal-cabecera"><h2 id="tAjustes">⚙️ Ajustes</h2><button class="icono-btn" data-cerrar>✕</button></div>
 
-      <h3>Pista para el impostor</h3>
-      <p class="nota">Solo en modo Clásico.</p>
-      <div class="segmentado" id="ajPista">
-        <button data-valor="nada">Nada</button>
-        <button data-valor="categoria">Categoría</button>
-        <button data-valor="parecida">Palabra parecida</button>
-        <button data-valor="ambas">Las dos</button>
+      <p class="nota">Partidas ya preparadas:</p>
+      <div class="presets" id="presetsLocal">
+        <button class="preset" data-preset="rapida"><span>⚡</span><b>Rápida</b><small>1:30 y a votar</small></button>
+        <button class="preset" data-preset="escrita"><span>✍️</span><b>Sin hablar</b><small>Se escribe en el iPad</small></button>
+        <button class="preset" data-preset="clasica"><span>🕵️</span><b>Clásica</b><small>Pista y expulsiones</small></button>
+        <button class="preset" data-preset="caos"><span>🤪</span><b>Caos</b><small>Trampas y sin pista</small></button>
       </div>
 
-      <h3>Modo Preguntas</h3>
-      <label class="interruptor"><input type="checkbox" id="ajPicante" /><span>🌶️ Preguntas picantes (para que el impostor suelte una bastada)</span></label>
-      <label class="interruptor"><input type="checkbox" id="ajPregJugadores" /><span>👥 Preguntas sobre los jugadores de la partida</span></label>
-
-      <h3>Partida</h3>
-      <label class="interruptor"><input type="checkbox" id="ajEliminacion" /><span>Expulsiones: si echáis a un inocente, se sigue jugando hasta pillar al impostor</span></label>
-      <label class="interruptor"><input type="checkbox" id="ajAdivinar" /><span>Si pillan al impostor, puede robar la victoria adivinando la palabra</span></label>
-      <label class="interruptor"><input type="checkbox" id="ajNoEmpieza" /><span>El impostor nunca empieza a hablar</span></label>
-      <label class="interruptor"><input type="checkbox" id="ajSeConocen" /><span>Si hay varios impostores, saben quiénes son los otros</span></label>
-      <label class="interruptor"><input type="checkbox" id="ajVotoSecreto" /><span>Votación secreta por defecto (cada uno vota en el móvil)</span></label>
-
-      <h3>Rondas trampa</h3>
-      <label class="interruptor"><input type="checkbox" id="ajTrampa" /><span>A veces no hay ningún impostor… o lo son todos</span></label>
-      <div class="deslizador" id="cajaProbTrampa">
-        <span>Probabilidad</span>
-        <input type="range" id="ajProbTrampa" min="2" max="40" step="1" />
-        <b id="valorProbTrampa">10%</b>
+      <div class="ajuste-bloque">
+        <h3><span>🗣️</span> Cómo dais las pistas</h3>
+        <div class="segmentado" id="ajFormaPistas">
+          <button data-valor="habladas">🗣️ Hablando</button>
+          <button data-valor="escritas">✍️ Escribiendo</button>
+        </div>
+        <div id="cajaVueltas" class="ajuste-fila-local">
+          <span>Palabras por persona</span>
+          <span class="contador-mini">
+            <button data-vueltas="-1" aria-label="Menos">−</button><b id="valorVueltas">1</b><button data-vueltas="1" aria-label="Más">+</button>
+          </span>
+        </div>
+        <p class="nota" id="notaEscritas">Cada uno escribe su palabra en el iPad por turnos y se pasa al siguiente. No hace falta hablar.</p>
       </div>
 
-      <h3>Tiempo de debate</h3>
-      <label class="interruptor"><input type="checkbox" id="ajTiempo" /><span>Usar cronómetro</span></label>
-      <div class="deslizador" id="cajaMinutos">
-        <span>Duración</span>
-        <input type="range" id="ajMinutos" min="0.5" max="10" step="0.5" />
-        <b id="valorMinutos">3 min</b>
+      <div class="ajuste-bloque">
+        <h3><span>💡</span> Pista para el impostor <small class="nota">(modo Clásico)</small></h3>
+        <div class="segmentado" id="ajPista">
+          <button data-valor="nada">Nada</button>
+          <button data-valor="categoria">Categoría</button>
+          <button data-valor="parecida">Palabra parecida</button>
+          <button data-valor="ambas">Las dos</button>
+        </div>
       </div>
 
-      <h3>Palabras</h3>
-      <label class="interruptor"><input type="checkbox" id="ajNoRepetir" /><span>No repetir palabras hasta que salgan todas</span></label>
-      <button class="texto-btn" id="btnReiniciarUsadas">Olvidar palabras ya usadas</button>
+      <div class="ajuste-bloque">
+        <h3><span>🎮</span> Partida</h3>
+        <label class="interruptor"><input type="checkbox" id="ajEliminacion" /><span>🔁 Si echáis a un inocente, se sigue jugando</span></label>
+        <label class="interruptor"><input type="checkbox" id="ajAdivinar" /><span>🎯 El impostor pillado puede robar la victoria</span></label>
+        <label class="interruptor"><input type="checkbox" id="ajNoEmpieza" /><span>🚫 El impostor nunca empieza</span></label>
+        <label class="interruptor"><input type="checkbox" id="ajSeConocen" /><span>🤝 Los impostores se conocen entre ellos</span></label>
+        <label class="interruptor"><input type="checkbox" id="ajVotoSecreto" /><span>🤫 Votación secreta en el móvil</span></label>
+      </div>
 
-      <h3>Otros</h3>
-      <label class="interruptor"><input type="checkbox" id="ajSonido" /><span>Sonidos</span></label>
-      <label class="interruptor"><input type="checkbox" id="ajVibracion" /><span>Vibración</span></label>
+      <div class="ajuste-bloque">
+        <h3><span>⏱️</span> Tiempo de debate</h3>
+        <label class="interruptor"><input type="checkbox" id="ajTiempo" /><span>Usar cronómetro</span></label>
+        <div class="deslizador" id="cajaMinutos">
+          <span>Duración</span>
+          <input type="range" id="ajMinutos" min="0.5" max="10" step="0.5" />
+          <b id="valorMinutos">3 min</b>
+        </div>
+      </div>
+
+      <div class="ajuste-bloque">
+        <h3><span>🤡</span> Rondas trampa</h3>
+        <label class="interruptor"><input type="checkbox" id="ajTrampa" /><span>A veces no hay impostor… o lo son todos</span></label>
+        <div class="deslizador" id="cajaProbTrampa">
+          <span>Probabilidad</span>
+          <input type="range" id="ajProbTrampa" min="2" max="40" step="1" />
+          <b id="valorProbTrampa">10%</b>
+        </div>
+      </div>
+
+      <div class="ajuste-bloque">
+        <h3><span>💬</span> Modo Preguntas</h3>
+        <label class="interruptor"><input type="checkbox" id="ajPicante" /><span>🌶️ Preguntas picantes</span></label>
+        <label class="interruptor"><input type="checkbox" id="ajPregJugadores" /><span>👥 Preguntas sobre los jugadores</span></label>
+      </div>
+
+      <div class="ajuste-bloque">
+        <h3><span>🗂️</span> Palabras y sonido</h3>
+        <label class="interruptor"><input type="checkbox" id="ajNoRepetir" /><span>No repetir palabras hasta que salgan todas</span></label>
+        <label class="interruptor"><input type="checkbox" id="ajSonido" /><span>🔊 Sonidos</span></label>
+        <label class="interruptor"><input type="checkbox" id="ajVibracion" /><span>📳 Vibración</span></label>
+        <button class="texto-btn" id="btnReiniciarUsadas">Olvidar palabras ya usadas</button>
+      </div>
 
       <button class="btn ancho" data-cerrar>Guardar</button>
     </div>

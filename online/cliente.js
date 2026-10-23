@@ -42,6 +42,17 @@ function aviso(texto, ms = 2800) {
   temporizadorAviso = setTimeout(() => el.classList.add('oculto'), ms);
 }
 
+/** Anima la lista solo cuando cambia lo que hay en ella (no en cada repintado). */
+function animarSiCambia(el, clave) {
+  if (!el || el._clave === clave) return;
+  el._clave = clave;
+  el.classList.remove('animar');
+  void el.offsetWidth;
+  el.classList.add('animar');
+  clearTimeout(el._tAnimar);
+  el._tAnimar = setTimeout(() => el.classList.remove('animar'), 1000);
+}
+
 function irA(id) {
   $$('.pantalla').forEach((p) => p.classList.toggle('activa', p.id === id));
 }
@@ -212,6 +223,7 @@ async function pintarPublicas() {
     $('#listaPublicas').innerHTML = '<p class="nota">No se han podido cargar las salas.</p>';
     return;
   }
+  animarSiCambia($('#listaPublicas'), lista.map((s) => s.codigo + s.jugadores + s.fase).join());
   $('#listaPublicas').innerHTML = lista.map((s) => {
     const estadoSala = s.jugadores === 0 ? 'Vacía'
       : s.fase === 'sala' ? 'Esperando para empezar' : 'Jugando · entrarás en la siguiente ronda';
@@ -410,6 +422,7 @@ function pintar(v) {
   switch (v.fase) {
     case 'sala': pintarSala(); irA('pSala'); break;
     case 'reparto': pintarReparto(); irA('pReparto'); break;
+    case 'pistas': pintarPistas(); irA('pPistas'); break;
     case 'debate': pintarDebate(); irA('pDebate'); break;
     case 'resultado': pintarRecuento(); irA('pVotacion'); break;
     case 'expulsion': pintarExpulsion(); irA('pExpulsion'); break;
@@ -421,6 +434,11 @@ function pintar(v) {
 }
 
 function alCambiarDeFase(antes, ahora) {
+  if (ahora === 'pistas') { pistasVistas = estado.ronda.pistas.length; turnoAnterior = null; }
+  if (antes === 'pistas' && ahora === 'debate') {
+    aviso('🗳️ ¡Ya habéis escrito todos! A debatir y votar');
+    tono(659, 0.15, 0.1, 'triangle'); tono(880, 0.2, 0.1, 'triangle', 0.15);
+  }
   if (antes === 'debate' && ahora === 'resultado') {
     aviso('⏰ ¡Se acabó el tiempo! Contando votos…');
     sonidos.fin();
@@ -449,20 +467,21 @@ function pintarRelojes() {
     ultimoSegundo = s;
   }
   if (f === 'resultado') $('#votoTiempo').textContent = '';
+  if (f === 'pistas' && s != null) {
+    $('#turnoSegundos').textContent = s;
+    const total = estado.ajustes.tiempoTurno;
+    const largo = 2 * Math.PI * 19;
+    $('#arcoTiempo').style.strokeDasharray = largo;
+    $('#arcoTiempo').style.strokeDashoffset = largo * (1 - Math.min(1, s / total));
+    $('#anilloTiempo').classList.toggle('urgente', s <= 5);
+    if (s <= 5 && s > 0 && s !== ultimoSegundo && estado.ronda.turnoPista === miId()) tono(880, 0.07, 0.08);
+    ultimoSegundo = s;
+  }
   if (f === 'adivinar') $('#olCronoAdivinar').textContent = s != null ? `⏱️ ${s} s` : '';
 }
 setInterval(pintarRelojes, 250);
 
 // ------------------------------------------------------------- sala de espera
-
-const AJUSTE_CASILLAS = {
-  olMostrarRol: 'mostrarRol', olVotosAnonimos: 'votosAnonimos', olAdivinar: 'adivinar',
-  olCambiarVoto: 'cambiarVoto', olAcabarTodos: 'acabarSiTodosVotan', olEspectadoresVen: 'espectadoresVenTodo',
-  olNoEmpieza: 'noEmpieza', olTrampa: 'trampa', olPicante: 'picante', olPregJugadores: 'preguntasJugadores'
-};
-const AJUSTE_SELECTS = {
-  olImpostores: 'impostores', olPista: 'pista', olTiempoDebate: 'tiempoDebate', olExpulsados: 'expulsados'
-};
 
 function pintarSala() {
   const v = estado;
@@ -472,6 +491,7 @@ function pintarSala() {
   $('#btnCopiarCodigo').classList.toggle('oculto', v.publica);
   const jugando = v.jugadores.filter((j) => !j.espectador);
   const mirando = v.jugadores.filter((j) => j.espectador && j.conectado);
+  animarSiCambia($('#listaSala'), jugando.map((j) => j.id).join());
   $('#numSala').textContent = jugando.filter((j) => j.conectado).length;
 
   $('#listaSala').innerHTML = jugando.map((j) => `
@@ -507,62 +527,183 @@ function pintarSala() {
     : `Esperando a que ${nombre(v.anfitrion)} empiece la partida…`;
 }
 
+// ------------------------------------------------------------- ajustes
+
+const minSeg = (s) => (s < 60 ? `${s} s` : `${Math.floor(s / 60)}${s % 60 ? ':' + String(s % 60).padStart(2, '0') : ''} min`);
+const esEscritas = (a) => a.pistas === 'escritas' && a.modo !== 'preguntas';
+
+/** Partidas ya preparadas: un toque y listo. */
+const PRESETS = [
+  { id: 'rapida', icono: '⚡', nombre: 'Rápida', desc: '90 s, hablando',
+    ajustes: { pistas: 'habladas', tiempoDebate: 90, expulsados: 1, mostrarRol: true, trampa: false, cambiarVoto: true } },
+  { id: 'escrita', icono: '✍️', nombre: 'Sin hablar', desc: 'Se escribe por turnos',
+    ajustes: { pistas: 'escritas', vueltasPistas: 2, tiempoTurno: 30, tiempoDebate: 120, mostrarRol: true } },
+  { id: 'misterio', icono: '🕵️', nombre: 'Misterio', desc: 'Roles ocultos',
+    ajustes: { mostrarRol: false, votosAnonimos: true, cambiarVoto: false, tiempoDebate: 180 } },
+  { id: 'caos', icono: '🤪', nombre: 'Caos', desc: 'Trampas y 2 fuera',
+    ajustes: { trampa: true, probTrampa: 20, expulsados: 2, mostrarRol: false, modo: 'undercover' } }
+];
+
+const MODOS_OL = [
+  ['clasico', '🕵️', 'Clásico', 'El impostor sabe que lo es'],
+  ['undercover', '🎭', 'Undercover', 'Palabra parecida, no lo sabe'],
+  ['preguntas', '💬', 'Preguntas', 'Cada uno responde una pregunta']
+];
+
+/**
+ * Los ajustes, por secciones. Cada cosa sabe pintarse sola:
+ *  - interruptor: si/no      - contador: − valor +      - opciones: botones
+ */
+const SECCIONES = [
+  { id: 'juego', icono: '🎮', titulo: 'Juego', resumen: (a) => `${MODOS_OL.find((m) => m[0] === a.modo)[2]} · ${a.impostores ? a.impostores + ' impostor' + (a.impostores > 1 ? 'es' : '') : 'impostores auto'}`,
+    cosas: [
+      { tipo: 'modo' },
+      { tipo: 'opciones', clave: 'pistas', titulo: 'Cómo dais las pistas', si: (a) => a.modo !== 'preguntas',
+        opciones: [['habladas', '🗣️ Hablando'], ['escritas', '✍️ Escribiendo']] },
+      { tipo: 'contador', clave: 'vueltasPistas', titulo: 'Palabras por persona', icono: '🔁', valores: [1, 2, 3], si: esEscritas },
+      { tipo: 'contador', clave: 'tiempoTurno', titulo: 'Tiempo para escribir', icono: '⏳', valores: [15, 20, 30, 45, 60, 90], formato: minSeg, si: esEscritas },
+      { tipo: 'contador', clave: 'impostores', titulo: 'Impostores', icono: '🔪', valores: [0, 1, 2, 3, 4], formato: (v) => (v ? v : 'Auto') },
+      { tipo: 'opciones', clave: 'pista', titulo: 'Pista del impostor', si: (a) => a.modo === 'clasico',
+        opciones: [['nada', 'Nada'], ['categoria', 'Categoría'], ['parecida', 'Parecida'], ['ambas', 'Las dos']] }
+    ] },
+  { id: 'categorias', icono: '🗂️', titulo: 'Categorías', si: (a) => a.modo !== 'preguntas',
+    resumen: (a) => `${a.categorias.length} elegidas`, cosas: [{ tipo: 'categorias' }] },
+  { id: 'votacion', icono: '🗳️', titulo: 'Votación', resumen: (a) => `${minSeg(a.tiempoDebate)} · ${a.expulsados} fuera por turno${a.mostrarRol ? '' : ' · roles ocultos'}`,
+    cosas: [
+      { tipo: 'contador', clave: 'tiempoDebate', titulo: 'Tiempo para debatir y votar', icono: '⏱️', valores: [60, 90, 120, 180, 240, 300, 420, 600], formato: minSeg },
+      { tipo: 'contador', clave: 'expulsados', titulo: 'Expulsados por turno', icono: '🚀', valores: [1, 2, 3], formato: (v) => `${v}`, ayuda: (a) => `Cada uno vota a ${a.expulsados}` },
+      { tipo: 'interruptor', clave: 'mostrarRol', icono: '🔍', titulo: 'Decir si el expulsado era impostor', desc: 'Si no, se descubre al final' },
+      { tipo: 'interruptor', clave: 'cambiarVoto', icono: '🔄', titulo: 'Se puede cambiar el voto' },
+      { tipo: 'interruptor', clave: 'acabarSiTodosVotan', icono: '⏩', titulo: 'Contar en cuanto voten todos' },
+      { tipo: 'interruptor', clave: 'votosAnonimos', icono: '🎭', titulo: 'Votos anónimos' }
+    ] },
+  { id: 'extras', icono: '✨', titulo: 'Extras', resumen: (a) => [a.trampa && 'trampas', a.adivinar && 'robo final', a.modo === 'preguntas' && a.picante && 'picantes'].filter(Boolean).join(' · ') || 'nada especial',
+    cosas: [
+      { tipo: 'interruptor', clave: 'adivinar', icono: '🎯', titulo: 'Robo final', desc: 'El impostor pillado puede ganar adivinando la palabra', si: (a) => a.modo === 'clasico' },
+      { tipo: 'interruptor', clave: 'noEmpieza', icono: '🚫', titulo: 'El impostor nunca empieza' },
+      { tipo: 'interruptor', clave: 'trampa', icono: '🤡', titulo: 'Rondas trampa', desc: 'A veces no hay impostor, o lo son todos' },
+      { tipo: 'interruptor', clave: 'picante', icono: '🌶️', titulo: 'Preguntas picantes', si: (a) => a.modo === 'preguntas' },
+      { tipo: 'interruptor', clave: 'preguntasJugadores', icono: '👥', titulo: 'Preguntas sobre vosotros', si: (a) => a.modo === 'preguntas' },
+      { tipo: 'interruptor', clave: 'espectadoresVenTodo', icono: '👀', titulo: 'Los espectadores lo ven todo' }
+    ] }
+];
+
+const seccionesAbiertas = new Set(['juego']);
+let claveAjustes = '';
+
+function htmlCosa(c, a, mando) {
+  const dis = mando ? '' : 'disabled';
+  switch (c.tipo) {
+    case 'modo':
+      return `<div class="modos-ol">${MODOS_OL.map(([id, ic, nom, desc]) => `
+        <button class="modo-ol ${a.modo === id ? 'sel' : ''}" data-aj="modo" data-valor="${id}" ${dis}>
+          <span class="modo-ol-icono">${ic}</span><b>${nom}</b><small>${desc}</small></button>`).join('')}</div>`;
+    case 'opciones':
+      return `<div class="ajuste-fila columna"><span class="ajuste-titulo">${c.titulo}</span>
+        <div class="pastillas">${c.opciones.map(([v, t]) => `
+          <button class="pastilla ${a[c.clave] === v ? 'sel' : ''}" data-aj="${c.clave}" data-valor="${v}" ${dis}>${t}</button>`).join('')}</div></div>`;
+    case 'contador': {
+      const i = c.valores.indexOf(a[c.clave]);
+      const fmt = c.formato || ((v) => v);
+      return `<div class="ajuste-fila">
+        <span class="ajuste-icono">${c.icono}</span>
+        <span class="ajuste-texto"><span class="ajuste-titulo">${c.titulo}</span>${c.ayuda ? `<small>${c.ayuda(a)}</small>` : ''}</span>
+        <span class="contador-mini">
+          <button data-paso="-1" data-clave="${c.clave}" ${dis || (i <= 0 ? 'disabled' : '')} aria-label="Menos">−</button>
+          <b class="valor-contador" data-valor-de="${c.clave}">${fmt(a[c.clave])}</b>
+          <button data-paso="1" data-clave="${c.clave}" ${dis || (i >= c.valores.length - 1 ? 'disabled' : '')} aria-label="Más">+</button>
+        </span></div>`;
+    }
+    case 'interruptor':
+      return `<label class="ajuste-fila conmutable">
+        <span class="ajuste-icono">${c.icono}</span>
+        <span class="ajuste-texto"><span class="ajuste-titulo">${c.titulo}</span>${c.desc ? `<small>${c.desc}</small>` : ''}</span>
+        <input type="checkbox" class="switch" data-switch="${c.clave}" ${a[c.clave] ? 'checked' : ''} ${dis} /></label>`;
+    case 'categorias': {
+      const nombres = Object.keys(CATEGORIAS_LOCALES);
+      return `<div class="fila-mini derecha"><button class="texto-btn" data-todas ${dis}>${a.categorias.length === nombres.length ? 'Quitar todas' : 'Elegir todas'}</button></div>
+        <div class="categorias compactas">${nombres.map((n) => `
+          <button class="categoria-btn ${a.categorias.includes(n) ? 'selected' : ''}" data-cat="${esc(n)}" ${dis}>
+            <span class="cat-icono">${CATEGORIAS_LOCALES[n].icono}</span><span class="cat-nombre">${esc(n)}</span></button>`).join('')}</div>`;
+    }
+    default: return '';
+  }
+}
+
 function pintarAjustes() {
   const a = estado.ajustes;
   const mando = soyAnfitrion();
-  $('#panelAjustesOnline').classList.toggle('solo-lectura', !mando);
-  $('#notaAjustes').textContent = mando ? 'Los cambias tú (anfitrión)' : 'Los elige el anfitrión';
+  const clave = JSON.stringify(a) + mando;
+  $('#notaAjustes').textContent = mando ? 'Tú mandas 👑' : `Los elige ${nombre(estado.anfitrion)} 👑`;
+  if (clave === claveAjustes) return;
+  claveAjustes = clave;
 
-  $$('#olModo button').forEach((b) => b.classList.toggle('sel', b.dataset.valor === a.modo));
-  $('#grupoCategorias').classList.toggle('oculto', a.modo === 'preguntas');
-  $('#grupoPista').classList.toggle('oculto', a.modo !== 'clasico');
-  $('#grupoPreguntas').classList.toggle('oculto', a.modo !== 'preguntas');
+  $('#presets').classList.toggle('oculto', !mando);
+  $('#presets').innerHTML = PRESETS.map((p) => {
+    const activo = Object.entries(p.ajustes).every(([k, v]) => a[k] === v);
+    return `<button class="preset ${activo ? 'sel' : ''}" data-preset="${p.id}"><span>${p.icono}</span><b>${p.nombre}</b><small>${p.desc}</small></button>`;
+  }).join('');
 
-  const cont = $('#olCategorias');
-  const nombres = Object.keys(CATEGORIAS_LOCALES);
-  if (cont.childElementCount !== nombres.length) {
-    cont.innerHTML = nombres.map((n) => `<button class="categoria-btn" data-cat="${esc(n)}">
-      <span class="cat-icono">${CATEGORIAS_LOCALES[n].icono}</span><span class="cat-nombre">${esc(n)}</span></button>`).join('');
-    $$('#olCategorias [data-cat]').forEach((b) => b.addEventListener('click', () => {
-      if (!soyAnfitrion()) return;
-      const sel = new Set(estado.ajustes.categorias);
-      if (sel.has(b.dataset.cat)) sel.delete(b.dataset.cat); else sel.add(b.dataset.cat);
-      mandar('ajustes', { ajustes: { categorias: [...sel] } });
-    }));
-  }
-  $$('#olCategorias [data-cat]').forEach((b) => b.classList.toggle('selected', a.categorias.includes(b.dataset.cat)));
-  $('#olNumCategorias').textContent = a.categorias.length;
-  $('#olTodas').textContent = a.categorias.length === nombres.length ? 'Ninguna' : 'Todas';
-
-  for (const [idEl, clave] of Object.entries(AJUSTE_SELECTS)) {
-    const el = $('#' + idEl);
-    el.value = String(a[clave]);
-    el.disabled = !mando;
-  }
-  for (const [idEl, clave] of Object.entries(AJUSTE_CASILLAS)) {
-    const el = $('#' + idEl);
-    el.checked = !!a[clave];
-    el.disabled = !mando;
-  }
+  $('#ajustesOnline').innerHTML = SECCIONES.filter((sec) => !sec.si || sec.si(a)).map((sec) => `
+    <div class="seccion ${seccionesAbiertas.has(sec.id) ? 'abierta' : ''}" data-seccion="${sec.id}">
+      <button class="seccion-cabecera" data-abrir-seccion="${sec.id}">
+        <span class="seccion-icono">${sec.icono}</span>
+        <span class="seccion-textos"><b>${sec.titulo}</b><small>${esc(sec.resumen(a))}</small></span>
+        <span class="flecha">⌄</span>
+      </button>
+      <div class="seccion-cuerpo"><div class="seccion-interior">
+        ${sec.cosas.filter((c) => !c.si || c.si(a)).map((c) => htmlCosa(c, a, mando)).join('')}
+      </div></div>
+    </div>`).join('');
 }
 
-$$('#olModo button').forEach((b) => b.addEventListener('click', () => {
-  if (soyAnfitrion()) mandar('ajustes', { ajustes: { modo: b.dataset.valor } });
-}));
-$('#olTodas').addEventListener('click', () => {
+function cambiarAjuste(cambios) {
   if (!soyAnfitrion()) return;
-  const todas = Object.keys(CATEGORIAS_LOCALES);
-  mandar('ajustes', { ajustes: { categorias: estado.ajustes.categorias.length === todas.length ? [] : todas } });
+  sonidos.voto();
+  mandar('ajustes', { ajustes: cambios });
+}
+
+// Un solo escuchador para todo el panel de ajustes
+$('#panelAjustesOnline').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.abrirSeccion) {
+    const id = b.dataset.abrirSeccion;
+    if (seccionesAbiertas.has(id)) seccionesAbiertas.delete(id); else seccionesAbiertas.add(id);
+    const sec = b.closest('.seccion');
+    sec.classList.toggle('abierta');
+    sec.classList.add('recien');
+    setTimeout(() => sec.classList.remove('recien'), 700);
+    return;
+  }
+  if (!soyAnfitrion()) return;
+  const a = estado.ajustes;
+  if (b.dataset.preset) {
+    const p = PRESETS.find((x) => x.id === b.dataset.preset);
+    cambiarAjuste(p.ajustes);
+    aviso(`${p.icono} Partida ${p.nombre.toLowerCase()} lista`);
+  } else if (b.dataset.aj) {
+    cambiarAjuste({ [b.dataset.aj]: b.dataset.valor });
+  } else if (b.dataset.paso) {
+    const c = SECCIONES.flatMap((s) => s.cosas).find((x) => x.clave === b.dataset.clave);
+    const i = c.valores.indexOf(a[c.clave]);
+    const nuevo = c.valores[Math.min(c.valores.length - 1, Math.max(0, (i < 0 ? 0 : i) + Number(b.dataset.paso)))];
+    const valorEl = b.parentElement.querySelector('.valor-contador');
+    valorEl.classList.remove('salta'); void valorEl.offsetWidth; valorEl.classList.add('salta');
+    cambiarAjuste({ [c.clave]: nuevo });
+  } else if (b.dataset.cat) {
+    const sel = new Set(a.categorias);
+    if (sel.has(b.dataset.cat)) sel.delete(b.dataset.cat); else sel.add(b.dataset.cat);
+    cambiarAjuste({ categorias: [...sel] });
+  } else if ('todas' in b.dataset) {
+    const todas = Object.keys(CATEGORIAS_LOCALES);
+    cambiarAjuste({ categorias: a.categorias.length === todas.length ? [] : todas });
+  }
 });
-for (const [idEl, clave] of Object.entries(AJUSTE_SELECTS)) {
-  $('#' + idEl).addEventListener('change', (e) => {
-    const valor = clave === 'pista' ? e.target.value : Number(e.target.value);
-    mandar('ajustes', { ajustes: { [clave]: valor } });
-  });
-}
-for (const [idEl, clave] of Object.entries(AJUSTE_CASILLAS)) {
-  $('#' + idEl).addEventListener('change', (e) => mandar('ajustes', { ajustes: { [clave]: e.target.checked } }));
-}
+$('#panelAjustesOnline').addEventListener('change', (e) => {
+  const sw = e.target.closest('[data-switch]');
+  if (sw) cambiarAjuste({ [sw.dataset.switch]: sw.checked });
+});
 
 $('#btnEmpezar').addEventListener('click', () => mandar('empezar'));
 $('#btnCambiarModo').addEventListener('click', () => mandar('modo', { espectador: !estado.yo.espectador }));
@@ -721,8 +862,10 @@ function pintarReparto() {
       cartaVista = false;
       $('#cartaOnlineFrente').innerHTML = htmlCarta(yo.carta);
       $('#cartaOnlineFrente').classList.toggle('impostor', yo.carta && yo.carta.tipo === 'impostor');
-      $('#cartaDebateFrente').innerHTML = htmlCarta(yo.carta);
-      $('#cartaDebateFrente').classList.toggle('impostor', yo.carta && yo.carta.tipo === 'impostor');
+      for (const sel of ['#cartaDebateFrente', '#cartaPistasFrente']) {
+        $(sel).innerHTML = htmlCarta(yo.carta);
+        $(sel).classList.toggle('impostor', yo.carta && yo.carta.tipo === 'impostor');
+      }
     }
     $('#btnListo').classList.toggle('oculto', yo.listo);
     $('#olZonaRespuesta').classList.toggle('oculto', !esPregunta || yo.listo || !cartaVista);
@@ -760,6 +903,81 @@ $('#btnForzarReparto').addEventListener('click', () => {
   if (confirm('¿Empezar sin esperar a los que faltan?')) mandar('forzar');
 });
 
+// ------------------------------------------------------------------ pistas escritas
+
+let pistasVistas = 0;     // para animar solo las palabras nuevas
+let turnoAnterior = null;
+
+/** El muro con las palabras que ha escrito cada uno, por vueltas. */
+function htmlMuro(pistas, compacto = false) {
+  if (!pistas.length) return '<p class="nota centrado">Todavía nadie ha escrito.</p>';
+  const grupos = new Map();
+  pistas.forEach((p, i) => {
+    const k = p.vuelta;
+    if (!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k).push({ ...p, i });
+  });
+  const varias = grupos.size > 1;
+  return [...grupos.entries()].map(([vuelta, lista]) => `
+    ${varias ? `<p class="muro-vuelta">Vuelta ${vuelta}</p>` : ''}
+    <div class="muro-fila">${lista.map((p) => `
+      <div class="pista ${p.saltado ? 'saltada' : ''} ${!compacto && p.i >= pistasVistas ? 'nueva' : ''}" style="--c:${COLORES[jugador(p.id).color] || '#888'}">
+        ${avatar(p.id, 'mini')}
+        <span class="pista-textos"><small>${esc(nombre(p.id))}</small><b>${p.saltado ? '⏳ no escribió' : esc(p.texto)}</b></span>
+      </div>`).join('')}</div>`).join('');
+}
+
+function pintarPistas() {
+  const v = estado;
+  const r = v.ronda;
+  const turno = r.turnoPista;
+  const miTurno = turno === miId();
+
+  $('#pistasTanda').textContent = r.tandasPista > 1
+    ? `Palabra ${r.tandaPista} de ${r.tandasPista} · turno ${r.posPista + 1}/${r.totalPistas}`
+    : `Turno ${r.posPista + 1} de ${r.totalPistas}`;
+  $('#turnoAvatar').innerHTML = `<span class="foco">${avatar(turno, 'enorme')}</span>`;
+  $('#turnoTitulo').innerHTML = miTurno ? '¡Te toca escribir! ✍️' : `Escribe <span class="resalte">${esc(nombre(turno))}</span>`;
+  $('#formPista').classList.toggle('oculto', !miTurno);
+  $('#escribiendo').classList.toggle('oculto', miTurno);
+  $('.panel-turno').classList.toggle('mi-turno', miTurno);
+
+  if (turno !== turnoAnterior) {
+    // Animacion de cambio de turno
+    const foco = $('#turnoAvatar');
+    foco.classList.remove('entra'); void foco.offsetWidth; foco.classList.add('entra');
+    if (miTurno) {
+      $('#inputPista').value = '';
+      setTimeout(() => $('#inputPista').focus(), 150);
+      vibrar([80, 60, 80]);
+      tono(988, 0.12, 0.1, 'triangle'); tono(1318, 0.18, 0.1, 'triangle', 0.12);
+    }
+    turnoAnterior = turno;
+  }
+
+  $('#contadorPistas').textContent = r.pistas.filter((p) => !p.saltado).length;
+  $('#muroPistas').innerHTML = htmlMuro(r.pistas);
+  if (r.pistas.length > pistasVistas) sonidos.voto();
+  pistasVistas = r.pistas.length;
+
+  $('#panelCartaPistas').classList.toggle('oculto', !v.yo.participante);
+  $('#btnSaltarPistas').classList.toggle('oculto', !soyAnfitrion());
+  pintarEspectador('#espPistas');
+}
+
+$('#formPista').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const texto = $('#inputPista').value.trim();
+  if (!texto) { aviso('Escribe una palabra'); return; }
+  if (texto.split(/\s+/).length > 3) { aviso('Mejor una palabra (o dos) 😉'); return; }
+  const r = await mandar('pista', { texto });
+  if (r) { $('#inputPista').blur(); vibrar(30); }
+});
+$('#btnSaltarPistas').addEventListener('click', () => {
+  if (confirm('¿Saltar directamente a la votación?')) mandar('forzar');
+});
+prepararCarta($('#cartaPistas'));
+
 // ------------------------------------------------------------------ debate + votacion
 
 function htmlRespuestas(marcarImpostores = []) {
@@ -783,11 +1001,14 @@ function pintarDebate() {
 
   let instr;
   if (r.modo === 'preguntas') instr = 'Estas son las respuestas. ¿Cuál no encaja con la pregunta?';
+  else if (r.pistasEscritas) instr = 'Mirad lo que ha escrito cada uno: ¿quién no encaja? Debatid y votad antes de que se acabe el tiempo.';
   else if (r.numDebate === 1) instr = 'Por turnos, cada uno dice UNA palabra relacionada con la suya. Debatid y votad antes de que se acabe el tiempo.';
   else instr = 'Otra vuelta de palabras… ¡sin repetir! Y a votar otra vez.';
   if (r.expulsion && r.numDebate > 1) instr = `${r.expulsion.textos.join(' ')} ${instr}`;
   $('#olInstruccion').textContent = instr;
 
+  $('#muroDebate').innerHTML = r.pistasEscritas && r.pistas.length
+    ? `<p class="pasa">✍️ Lo que habéis escrito</p>${htmlMuro(r.pistas, true)}` : '';
   $('#olRespuestasDebate').innerHTML = r.modo === 'preguntas'
     ? `${htmlRespuestas()}<p class="pregunta-real">La pregunta de verdad era:<br><b>"${esc(r.pregunta)}"</b></p>`
     : '';
@@ -795,8 +1016,10 @@ function pintarDebate() {
   $('#olFantasma').classList.toggle('oculto', !(v.yo.participante && !v.yo.vivo));
   $('#panelMiCarta').classList.toggle('oculto', !v.yo.participante);
   if (v.yo.participante && !$('#cartaDebateFrente').innerHTML) {
-    $('#cartaDebateFrente').innerHTML = htmlCarta(v.yo.carta);
-    $('#cartaDebateFrente').classList.toggle('impostor', v.yo.carta && v.yo.carta.tipo === 'impostor');
+    for (const sel of ['#cartaDebateFrente', '#cartaPistasFrente']) {
+      $(sel).innerHTML = htmlCarta(v.yo.carta);
+      $(sel).classList.toggle('impostor', v.yo.carta && v.yo.carta.tipo === 'impostor');
+    }
   }
   pintarPanelVoto();
   pintarEspectador('#espDebate');
@@ -830,6 +1053,7 @@ function pintarPanelVoto() {
     + (a.cambiarVoto ? ' Puedes cambiar el voto hasta el final.' : ' Ojo: una vez votas, no se puede cambiar.');
 
   const candidatos = r.vivos.filter((id) => id !== yo);
+  animarSiCambia($('#listaVoto'), clave + candidatos.join());
   $('#listaVoto').innerHTML = candidatos.map((id) => {
     const marcado = borrador.includes(id);
     return `<button class="fila-voto ${marcado ? 'marcada' : ''}" data-votar="${esc(id)}" ${!puedeVotar || bloqueado ? 'disabled' : ''}>
@@ -897,6 +1121,7 @@ function pintarRecuento() {
     `<span class="votante" style="animation-delay:${0.3 + i * 0.2}s">${id ? avatar(id, 'mini') : '<span class="trip-anonimo"></span>'}</span>`).join('');
 
   const enJuego = r.participantes.filter((id) => r.vivos.includes(id) || uv.expulsados.includes(id));
+  animarSiCambia($('#placas'), `${r.num}-${r.numDebate}`);
   $('#placas').innerHTML = enJuego.map((id) => `<div class="placa ${uv.expulsados.includes(id) ? 'expulsada' : ''}">
       ${avatar(id)}
       <span class="placa-info"><span class="placa-nombre">${esc(nombre(id))}</span>

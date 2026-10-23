@@ -57,7 +57,9 @@ const AJUSTES_DEFECTO = {
   sonido: true,
   vibracion: true,
   picante: true,           // modo Preguntas: preguntas arriesgadas 🌶️
-  preguntasJugadores: true // modo Preguntas: preguntas con nombres de los jugadores
+  preguntasJugadores: true, // modo Preguntas: preguntas con nombres de los jugadores
+  escritas: false,         // cada uno escribe su palabra en el iPad por turnos
+  vueltasEscritas: 1       // cuantas palabras escribe cada uno
 };
 
 function cargar() {
@@ -229,8 +231,20 @@ function irA(id) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+/** Anima la lista solo cuando cambia lo que hay en ella. */
+function animarSiCambia(el, clave) {
+  if (!el || el._clave === clave) return;
+  el._clave = clave;
+  el.classList.remove("animar");
+  void el.offsetWidth;
+  el.classList.add("animar");
+  clearTimeout(el._tAnimar);
+  el._tAnimar = setTimeout(() => el.classList.remove("animar"), 1000);
+}
+
 function pintarJugadores() {
   const cont = $("#listaJugadores");
+  animarSiCambia(cont, datos.jugadores.join("|"));
   cont.innerHTML = "";
   datos.jugadores.forEach((nombre, i) => {
     const chip = document.createElement("span");
@@ -260,6 +274,7 @@ function pintarModos() {
 
 function pintarCategorias() {
   const cont = $("#categorias");
+  animarSiCambia(cont, Object.keys(todasLasCategorias()).join("|"));
   cont.innerHTML = "";
   const cats = todasLasCategorias();
   // Quitamos de la selección categorías que ya no existen
@@ -304,6 +319,7 @@ function pintarResumen() {
     const textos = { nada: "Sin pista", categoria: "Pista: categoría", parecida: "Pista: palabra parecida", ambas: "Pista: categoría + parecida" };
     partes.push("💡 " + textos[a.pista]);
   }
+  if (a.escritas && datos.modo !== "preguntas") partes.push(`✍️ Escribiendo${a.vueltasEscritas > 1 ? ` (${a.vueltasEscritas})` : ""}`);
   partes.push(a.tiempo ? `⏱️ ${a.minutos} min` : "⏱️ Sin tiempo");
   if (a.trampa && datos.modo !== "admin") partes.push(`🤡 Trampa ${a.probTrampa}%`);
   if (a.eliminacion) partes.push("🔁 Expulsiones");
@@ -430,7 +446,10 @@ function rondaBase() {
     respuestas: {},        // modo Preguntas: respuesta escrita de cada jugador
     respuestasReveladas: false,
     vistoActual: false,
-    expulsados: []
+    expulsados: [],
+    pistas: [],            // palabras escritas: { i, texto, vuelta, saltado }
+    colaPistas: [],
+    posPista: 0
   };
 }
 
@@ -708,7 +727,96 @@ function empezarDebate() {
   prepararCrono();
   irA("pDebate");
   melodia([[523], [659], [784]]);
+
+  // Pistas escritas: antes de debatir, cada uno escribe su palabra pasando el iPad
+  if (!ronda.pistas.length) pistasPintadas = 0;
+  if (datos.ajustes.escritas && ronda.modo !== "preguntas") {
+    ronda.colaPistas = [];
+    for (let t = 0; t < datos.ajustes.vueltasEscritas; t++) ronda.colaPistas.push(...orden);
+    ronda.posPista = 0;
+    instr.textContent = "Cada uno escribe UNA palabra relacionada con la suya. Pasaos el iPad en orden.";
+    modoEscribir(true);
+    turnoEscribir();
+  } else {
+    modoEscribir(false);
+  }
+  pintarMuroLocal();
 }
+
+/* ---------------- Pistas escritas en un solo iPad ---------------- */
+let pistasPintadas = 0;
+
+function modoEscribir(activo) {
+  $("#panelEscribir").classList.toggle("oculto", !activo);
+  $("#btnIrVotar").classList.toggle("oculto", activo);
+  $("#btnRevelarYa").classList.toggle("oculto", activo);
+  if (activo) $("#panelCrono").classList.add("oculto");
+  else $("#panelCrono").classList.toggle("oculto", !datos.ajustes.tiempo);
+}
+
+function turnoEscribir() {
+  if (ronda.posPista >= ronda.colaPistas.length) {
+    modoEscribir(false);
+    $("#debateInstruccion").textContent = "¡Ya habéis escrito todos! Mirad las palabras, debatid y votad.";
+    aviso("🗳️ ¡A debatir y votar!");
+    melodia([[659], [880]]);
+    return;
+  }
+  const i = ronda.colaPistas[ronda.posPista];
+  const nombre = ronda.jugadores[i];
+  const tanda = Math.floor(ronda.posPista / (vivosLista().length || 1)) + 1;
+  $("#escribirProgreso").textContent = datos.ajustes.vueltasEscritas > 1
+    ? `Palabra ${tanda} de ${datos.ajustes.vueltasEscritas} · turno ${ronda.posPista + 1}/${ronda.colaPistas.length}`
+    : `Turno ${ronda.posPista + 1} de ${ronda.colaPistas.length}`;
+  $("#escribirNombre").textContent = nombre;
+  const caja = $("#escribirInicial");
+  caja.innerHTML = `<span class="foco"><span class="inicial grande" style="--c:${colorDe(i)}">${esc(nombre[0].toUpperCase())}</span></span>`;
+  caja.classList.remove("entra"); void caja.offsetWidth; caja.classList.add("entra");
+  $("#inputEscribir").value = "";
+  vibrar([50, 40, 50]);
+}
+
+/** Un color fijo para cada jugador, para reconocerle en el muro. */
+function colorDe(i) {
+  const colores = ["#ef4444", "#3b82f6", "#22c55e", "#ec4899", "#f97316", "#eab308", "#8b5cf6", "#14b8a6", "#a16207", "#64748b", "#06b6d4", "#84cc16"];
+  return colores[i % colores.length];
+}
+
+function apuntarEscrita(texto, saltado = false) {
+  ronda.pistas.push({ i: ronda.colaPistas[ronda.posPista], texto, saltado, vuelta: ronda.numDebate });
+  ronda.posPista++;
+  pintarMuroLocal();
+  pitido(saltado ? 330 : 880, 0.08, 0.08);
+  turnoEscribir();
+}
+
+function pintarMuroLocal() {
+  const lista = ronda.pistas;
+  $("#panelMuroLocal").classList.toggle("oculto", !lista.length);
+  $("#contadorLocal").textContent = lista.filter((p) => !p.saltado).length;
+  const vueltas = new Set(lista.map((p) => p.vuelta));
+  let html = "";
+  for (const v of vueltas) {
+    if (vueltas.size > 1) html += `<p class="muro-vuelta">Ronda ${v}</p>`;
+    html += `<div class="muro-fila">${lista.map((p, k) => ({ ...p, k })).filter((p) => p.vuelta === v).map((p) => `
+      <div class="pista ${p.saltado ? "saltada" : ""} ${p.k >= pistasPintadas ? "nueva" : ""}" style="--c:${colorDe(p.i)}">
+        <span class="inicial" style="--c:${colorDe(p.i)}">${esc(ronda.jugadores[p.i][0].toUpperCase())}</span>
+        <span class="pista-textos"><small>${esc(ronda.jugadores[p.i])}</small><b>${p.saltado ? "⏳ se lo saltó" : esc(p.texto)}</b></span>
+      </div>`).join("")}</div>`;
+  }
+  $("#muroLocal").innerHTML = html;
+  pistasPintadas = lista.length;
+}
+
+$("#formEscribir").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const texto = $("#inputEscribir").value.replace(/\s+/g, " ").trim().slice(0, 30);
+  if (!texto) { aviso("Escribe una palabra"); return; }
+  if (texto.split(" ").length > 3) { aviso("Mejor una palabra (o dos) 😉"); return; }
+  $("#inputEscribir").blur();
+  apuntarEscrita(texto);
+});
+$("#btnSaltarTurno").addEventListener("click", () => apuntarEscrita(null, true));
 
 // Modo Preguntas: primero se revelan todas las respuestas a la vez y luego la pregunta
 function htmlRespuestas(marcarImpostor = false) {
@@ -1220,6 +1328,14 @@ const CASILLAS = {
 
 function pintarAjustes() {
   const a = datos.ajustes;
+  $$("#ajFormaPistas button").forEach((b) => b.classList.toggle("sel", b.dataset.valor === (a.escritas ? "escritas" : "habladas")));
+  $("#cajaVueltas").classList.toggle("oculto", !a.escritas);
+  $("#notaEscritas").classList.toggle("oculto", !a.escritas);
+  $("#valorVueltas").textContent = a.vueltasEscritas;
+  $$("#presetsLocal [data-preset]").forEach((b) => {
+    const p = PRESETS_LOCAL[b.dataset.preset];
+    b.classList.toggle("sel", Object.entries(p).every(([k, v]) => a[k] === v));
+  });
   Object.entries(CASILLAS).forEach(([id, clave]) => { $("#" + id).checked = a[clave]; });
   $$("#ajPista button").forEach((b) => b.classList.toggle("sel", b.dataset.valor === a.pista));
   $("#ajProbTrampa").value = a.probTrampa;
@@ -1229,6 +1345,29 @@ function pintarAjustes() {
   $("#cajaProbTrampa").classList.toggle("oculto", !a.trampa);
   $("#cajaMinutos").classList.toggle("oculto", !a.tiempo);
 }
+
+/** Partidas ya preparadas para el modo de un solo iPad. */
+const PRESETS_LOCAL = {
+  rapida: { escritas: false, tiempo: true, minutos: 1.5, eliminacion: false, trampa: false },
+  escrita: { escritas: true, vueltasEscritas: 2, tiempo: true, minutos: 2 },
+  clasica: { escritas: false, pista: "categoria", eliminacion: true, adivinar: true, tiempo: false, trampa: false },
+  caos: { trampa: true, probTrampa: 20, pista: "nada", eliminacion: true }
+};
+$$("#presetsLocal [data-preset]").forEach((b) => b.addEventListener("click", () => {
+  Object.assign(datos.ajustes, PRESETS_LOCAL[b.dataset.preset]);
+  pintarAjustes();
+  aviso(`${b.querySelector("span").textContent} Partida ${b.querySelector("b").textContent.toLowerCase()} lista`);
+}));
+$$("#ajFormaPistas button").forEach((b) => b.addEventListener("click", () => {
+  datos.ajustes.escritas = b.dataset.valor === "escritas";
+  pintarAjustes();
+}));
+$$("[data-vueltas]").forEach((b) => b.addEventListener("click", () => {
+  datos.ajustes.vueltasEscritas = Math.min(3, Math.max(1, datos.ajustes.vueltasEscritas + Number(b.dataset.vueltas)));
+  const v = $("#valorVueltas");
+  v.classList.remove("salta"); void v.offsetWidth; v.classList.add("salta");
+  pintarAjustes();
+}));
 
 Object.entries(CASILLAS).forEach(([id, clave]) => {
   $("#" + id).addEventListener("change", (e) => {

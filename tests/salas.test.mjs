@@ -533,3 +533,64 @@ test('el anfitrion puede hacer que los espectadores no vean nada', () => {
   S.empezar(sala.codigo, 'a');
   assert.equal(S.vista(sala, 'x').espectador, undefined);
 });
+
+// ------------------------------------------------------------------ pistas escritas
+
+test('pistas escritas: cada uno escribe su palabra en su turno y luego se vota', () => {
+  const { S, sala, ids } = partida({ pistas: 'escritas', vueltasPistas: 1 });
+  todosListos(S, sala, ids);
+  assert.equal(sala.fase, 'pistas');
+  const orden = [...sala.ronda.orden];
+  assert.equal(S.vista(sala, 'a').ronda.turnoPista, orden[0]);
+  // No se puede escribir fuera de turno ni votar todavia
+  assert.ok(S.escribirPista(sala.codigo, orden[1], 'hola').error);
+  assert.ok(S.votar(sala.codigo, 'a', ['b']).error);
+  orden.forEach((id, i) => assert.ok(!S.escribirPista(sala.codigo, id, 'palabra' + i).error));
+  assert.equal(sala.fase, 'debate');
+  const v = S.vista(sala, 'c');
+  assert.deepEqual(v.ronda.pistas.map((p) => p.texto), orden.map((_, i) => 'palabra' + i));
+});
+
+test('pistas escritas: si se acaba tu tiempo, se salta tu turno', () => {
+  const { S, sala, ids, avanzar } = partida({ pistas: 'escritas', tiempoTurno: 20 });
+  todosListos(S, sala, ids);
+  const primero = sala.ronda.orden[0];
+  avanzar(20_000);
+  assert.equal(sala.ronda.pistas[0].id, primero);
+  assert.equal(sala.ronda.pistas[0].saltado, true);
+  assert.equal(S.vista(sala, 'a').ronda.turnoPista, sala.ronda.orden[1]);
+});
+
+test('pistas escritas: varias tandas y se salta a los desconectados', () => {
+  const { S, sala, ids } = partida({ pistas: 'escritas', vueltasPistas: 2 });
+  todosListos(S, sala, ids);
+  const orden = [...sala.ronda.orden];
+  S.salir(sala.codigo, orden[2]);
+  for (let k = 0; k < 8; k++) {
+    const turno = S.vista(sala, 'a').ronda.turnoPista;
+    if (!turno) break;
+    S.escribirPista(sala.codigo, turno, 'x');
+  }
+  assert.equal(sala.fase, 'debate');
+  assert.equal(sala.ronda.pistas.length, 8, '4 conectados x 2 tandas');
+  assert.ok(!sala.ronda.pistas.some((p) => p.id === orden[2]));
+});
+
+test('en el modo Preguntas no hay pistas escritas', () => {
+  const { S, sala, ids } = partida({ pistas: 'escritas', modo: 'preguntas' });
+  ids.forEach((id) => S.listo(sala.codigo, id, 'respuesta'));
+  assert.equal(sala.fase, 'debate');
+});
+
+test('tras una expulsion se vuelve a escribir otra tanda', () => {
+  const { S, sala, ids, avanzar } = partida({ pistas: 'escritas', adivinar: false });
+  todosListos(S, sala, ids);
+  sala.ronda.orden.forEach((id) => S.escribirPista(sala.codigo, id, 'uno'));
+  const [imp] = impostoresDe(sala);
+  const inocente = ids.find((id) => id !== imp);
+  votarYContar(S, sala, avanzar, todosA(sala, inocente));
+  avanzar(DURACION.resultado);
+  avanzar(DURACION.expulsion);
+  assert.equal(sala.fase, 'pistas');
+  assert.ok(!sala.ronda.colaPistas.includes(inocente));
+});

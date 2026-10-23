@@ -26,6 +26,8 @@ Juego de fiesta para jugar con un solo móvil pasándolo de mano en mano. Todos 
 - Categorías propias creadas desde la app.
 - Número de impostores automático según jugadores, o manual.
 - Rondas trampa: a veces no hay impostor o lo son todos (probabilidad ajustable).
+- **Pistas escritas ✍️**: en vez de hablar, cada uno escribe su palabra en el iPad por turnos (1 a 3 palabras por persona) y salen todas en un muro.
+- Ajustes por bloques con interruptores y **partidas ya preparadas** (Rápida, Sin hablar, Clásica, Caos).
 - Expulsiones por rondas hasta pillar al impostor.
 - Votación rápida o secreta en el móvil.
 - El impostor pillado puede robar la victoria adivinando la palabra.
@@ -44,6 +46,8 @@ Montado igual que el billar: un servidor Node sin dependencias, salas con códig
 - **Espectadores 👀**: se puede entrar a mirar (botón *Mirar* en las públicas, o la casilla al entrar con código) o pasarse a espectador desde la sala de espera. El espectador lo ve todo: la palabra, quién es el impostor, la carta de cada uno, las respuestas y los votos en directo. Quien llega con la ronda en marcha la ve así y juega desde la siguiente. El anfitrión puede desactivar que los espectadores vean los roles.
 - **Salas privadas**: el anfitrión crea una y comparte el código de 4 letras o el enlace de invitación.
 - **Cada uno ve su carta en su móvil.** El servidor solo le manda a cada móvil SU carta, así que nadie puede mirar quién es el impostor.
+- **Pistas escritas ✍️** (ajuste): cada uno escribe su palabra en su móvil cuando le toca, con tiempo por turno, y salen todas en un muro animado antes de votar.
+- **Ajustes por secciones** que se abren y cierran, con contadores, interruptores y partidas ya preparadas (Rápida, Sin hablar, Misterio, Caos).
 - **Debate y votación a la vez**: hay un tiempo (1 a 10 min) para hablar y votar. Cuando se acaba, sale el más votado (si gana «saltar», no sale nadie). Se puede cambiar el voto hasta el final, o desactivarlo.
 - **Varios expulsados por turno** (ajuste): si son 2, cada uno vota a 2 personas y salen los 2 más votados. Si hay empate en el último hueco, no sale ninguno de los empatados.
 - **Roles ocultos** (ajuste): no se dice si el expulsado era impostor; se descubre al final, con la lista de expulsados de cada vuelta.
