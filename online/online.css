@@ -527,3 +527,6 @@ body.online .app { padding-bottom: 70px; }
   body.online .cabecera .lead { display: none; }
   body.online h1 { font-size: 1.3rem; }
 }
+
+.boton-terminar { background: rgba(251, 191, 36, 0.14); border-color: rgba(251, 191, 36, 0.45); }
+.boton-terminar:hover { background: rgba(251, 191, 36, 0.28); transform: scale(1.06); }

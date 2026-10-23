@@ -649,6 +649,10 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
         titulo = '¡Erais TODOS impostores!'; ganan = 'nadie';
         subtitulo = 'Nadie tenía la palabra 😂';
         break;
+      case 'cancelada':
+        titulo = 'Partida terminada'; ganan = 'nadie';
+        subtitulo = `${seFue || 'El anfitrión'} ha terminado la partida. Nadie suma puntos.`;
+        break;
       case 'abandono':
         titulo = 'Ronda terminada'; ganan = 'nadie';
         subtitulo = 'Se ha ido demasiada gente 🏃';
@@ -1004,6 +1008,17 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       else if (sala.fase === 'pistas') abrirDebate(sala);
       else if (sala.fase === 'debate') cerrarVotacion(sala);
       else return { error: 'Ahora no hace falta' };
+      tocar(sala);
+      return { sala };
+    },
+
+    /** El anfitrion corta la ronda en marcha: se revela todo y nadie suma. */
+    terminarYa(codigo, id) {
+      const sala = buscar(codigo);
+      if (!sala) return { error: 'Esa sala no existe' };
+      if (!esAnfitrion(sala, id)) return { error: 'Solo el anfitrión puede terminar la partida' };
+      if (faseEs(sala, 'sala', 'final')) return { error: 'No hay ninguna partida en marcha' };
+      terminar(sala, 'cancelada', { seFue: id });
       tocar(sala);
       return { sala };
     },

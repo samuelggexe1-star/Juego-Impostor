@@ -190,6 +190,7 @@ const ACCIONES = {
   listo: (c, yo, cu) => Salas.listo(c, yo, cu.respuesta),
   forzar: (c, yo) => Salas.forzar(c, yo),
   pista: (c, yo, cu) => Salas.escribirPista(c, yo, cu.texto),
+  terminar: (c, yo) => Salas.terminarYa(c, yo),
   votar: (c, yo, cu) => Salas.votar(c, yo, Array.isArray(cu.votos)
     ? cu.votos.slice(0, 5).map((v) => (v === 'saltar' || v === 'nadie' ? v : id(v)))
     : []),

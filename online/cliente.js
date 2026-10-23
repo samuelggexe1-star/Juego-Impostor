@@ -189,6 +189,13 @@ function conectar(codigo, espectador = false) {
   });
 }
 
+// El anfitrion termina la ronda sin salirse: se revela todo y nadie suma
+$('#btnTerminar').addEventListener('click', async () => {
+  if (!confirm('¿Terminar la partida para todos? Se verá quién era el impostor y nadie sumará puntos.')) return;
+  const r = await mandar('terminar');
+  if (r) aviso('⏹️ Partida terminada');
+});
+
 // El boton de la puerta: salir de la sala aunque la partida este en marcha
 $('#btnSalirPartida').addEventListener('click', async () => {
   if (!codigoActual) return;
@@ -211,6 +218,7 @@ function salirDeSala() {
   faseAnterior = null;
   history.replaceState(null, '', location.pathname);
   $('#btnSalirPartida').classList.add('oculto');
+  $('#btnTerminar').classList.add('oculto');
   pintarPerfil();
   irA('pEntrada');
   pintarPublicas();
@@ -517,6 +525,7 @@ function pintar(v) {
   estado = v;
   desfase = v.ahora - Date.now();
   $('#btnSalirPartida').classList.remove('oculto');
+  $('#btnTerminar').classList.toggle('oculto', !(v.anfitrion === miId() && !['sala', 'final'].includes(v.fase)));
 
   // En la sala, el chip de arriba enseña el color que te ha tocado de verdad
   $('#chipAvatar').innerHTML = avatar(miId(), 'mini');

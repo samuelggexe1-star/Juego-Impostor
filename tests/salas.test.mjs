@@ -670,3 +670,16 @@ test('chat: solo se quedan los ultimos mensajes', () => {
   assert.equal(C.mensajes.length, MAX_MENSAJES);
   assert.equal(C.mensajes.at(-1).texto, 'm' + (MAX_MENSAJES + 19));
 });
+
+test('el anfitrion puede terminar la partida sin salirse', () => {
+  const { S, sala, ids } = partida();
+  todosListos(S, sala, ids);
+  assert.ok(S.terminarYa(sala.codigo, 'b').error, 'no es anfitrion');
+  assert.ok(!S.terminarYa(sala.codigo, 'a').error);
+  assert.equal(sala.fase, 'final');
+  assert.equal(sala.ronda.resultado.tipo, 'cancelada');
+  assert.deepEqual(sala.ronda.resultado.delta, {});
+  assert.ok(sala.jugadores.find((j) => j.id === 'a').conectado, 'el anfitrion sigue en la sala');
+  assert.ok(S.vista(sala, 'c').ronda.final.impostores.length, 'se revela quien era');
+  assert.ok(!S.empezar(sala.codigo, 'a').error, 'se puede jugar otra');
+});
