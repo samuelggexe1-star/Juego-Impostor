@@ -1,0 +1,16 @@
+{
+  "name": "IMPOSTOR",
+  "short_name": "Impostor",
+  "description": "El juego del impostor: en un solo móvil o online, cada uno con el suyo.",
+  "lang": "es",
+  "start_url": "./online.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "icons": [
+    { "src": "icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

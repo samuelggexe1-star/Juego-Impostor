@@ -85,6 +85,7 @@ function formatoTiempo(s) {
 
 let audio = null;
 function tono(f, dur = 0.15, vol = 0.12, tipo = 'sine', retraso = 0) {
+  if (typeof perfil !== 'undefined' && perfil.prefs && perfil.prefs.sonido === false) return;
   try {
     audio = audio || new (window.AudioContext || window.webkitAudioContext)();
     const t = audio.currentTime + retraso;
@@ -108,7 +109,10 @@ const sonidos = {
   derrota: () => [392, 370, 349, 262].forEach((f, i) => tono(f, 0.3, 0.12, 'sawtooth', i * 0.2)),
   carta: () => tono(880, 0.06, 0.06)
 };
-const vibrar = (p) => { if (navigator.vibrate) navigator.vibrate(p); };
+const vibrar = (p) => {
+  if (typeof perfil !== 'undefined' && perfil.prefs && perfil.prefs.vibracion === false) return;
+  if (navigator.vibrate) navigator.vibrate(p);
+};
 
 // ------------------------------------------------------------------ arranque
 
@@ -175,17 +179,25 @@ async function unirse(codigo, espectador = $('#chkEspectador').checked) {
 function conectar(codigo, espectador = false) {
   if (conexion) conexion.cerrar();
   codigoActual = codigo;
+  espectadorActual = espectador;
   recordarSala(codigo);
+  mantenerPantalla(true);
   history.replaceState(null, '', '?sala=' + codigo);
   conexion = escuchar(codigo, perfil.nombre, perfil.color, espectador, {
     estado: pintar,
     echado: () => {
+      const quien = estado ? nombre(estado.anfitrion) : 'El anfitrión';
       recordarSala('');
       salirDeSala();
-      aviso('El anfitrión te ha echado de la sala');
+      mostrarCapa({
+        tipo: 'echado', icono: '🥾', titulo: 'Te han echado de la sala',
+        texto: `<b>${esc(quien)}</b> te ha sacado de la sala. Puedes entrar en otra o crear la tuya.`,
+        botones: [{ texto: '👌 Vale', accion: () => ocultarCapa() }]
+      });
+      vibrar([200, 80, 200]);
     },
-    abierto: () => $('#bannerRed').classList.add('oculto'),
-    caido: () => $('#bannerRed').classList.remove('oculto')
+    abierto: alVolver,
+    caido: alCaer
   });
 }
 
@@ -213,6 +225,12 @@ $('#btnSalirPartida').addEventListener('click', async () => {
 function salirDeSala() {
   if (conexion) conexion.cerrar();
   conexion = null;
+  clearTimeout(relojReconexion);
+  caidoDesde = null;
+  ocultarCapa('conexion');
+  mantenerPantalla(false);
+  restaurarTitulo();
+  $('#barraEstado').classList.add('oculto');
   estado = null;
   codigoActual = '';
   faseAnterior = null;
@@ -399,7 +417,9 @@ let perfilObligatorio = false;
 
 function abrirPerfil(obligatorio = false) {
   perfilObligatorio = obligatorio;
-  borradorPerfil = { ...perfil, stats: { ...perfil.stats } };
+  borradorPerfil = { ...perfil, stats: { ...perfil.stats }, prefs: { sonido: true, vibracion: true, ...(perfil.prefs || {}) } };
+  $('#prefSonido').checked = borradorPerfil.prefs.sonido;
+  $('#prefVibracion').checked = borradorPerfil.prefs.vibracion;
   if (!borradorPerfil.color) borradorPerfil.color = Object.keys(COLORES)[Math.floor(Math.random() * 15)];
   $('#perfilNombre').value = perfil.nombre;
   pintarModalPerfil();
@@ -495,6 +515,8 @@ $('#btnGuardarPerfil').addEventListener('click', async () => {
 });
 
 $('#chipPerfil').addEventListener('click', () => abrirPerfil());
+$('#prefSonido').addEventListener('change', (e) => { borradorPerfil.prefs.sonido = e.target.checked; });
+$('#prefVibracion').addEventListener('change', (e) => { borradorPerfil.prefs.vibracion = e.target.checked; });
 $('#cerrarPerfil').addEventListener('click', () => $('#modalPerfil').classList.add('oculto'));
 $('#modalPerfil').addEventListener('click', (e) => { if (e.target.id === 'modalPerfil') $('#modalPerfil').classList.add('oculto'); });
 // La inicial de la vista previa cambia mientras escribes el nombre
@@ -519,9 +541,281 @@ function apuntarEstadisticas() {
   guardarPerfil(perfil);
 }
 
+// ------------------------------------------------------------------ pantalla de estado
+
+let capaActual = null;
+
+/** Pantalla a pantalla completa para avisar de algo importante. */
+function mostrarCapa({ tipo, icono, titulo, texto, extra = '', botones = [] }) {
+  capaActual = tipo;
+  $('#capaIcono').textContent = icono;
+  $('#capaTitulo').textContent = titulo;
+  $('#capaTexto').innerHTML = texto;
+  $('#capaExtra').innerHTML = extra;
+  $('#capaBotones').innerHTML = botones.map((b, i) =>
+    `<button class="btn ${b.secundario ? 'btn-secundario' : ''} ancho" data-capa="${i}">${b.texto}</button>`).join('');
+  $$('#capaBotones [data-capa]').forEach((el) => el.addEventListener('click', () => botones[Number(el.dataset.capa)].accion()));
+  const capa = $('#capaEstado');
+  capa.dataset.tipo = tipo;
+  capa.classList.remove('oculto');
+}
+
+function ocultarCapa(tipo = null) {
+  if (tipo && capaActual !== tipo) return;
+  capaActual = null;
+  $('#capaEstado').classList.add('oculto');
+}
+
+const botonEntrada = { texto: '🏠 Ir a la entrada', secundario: true, accion: () => { ocultarCapa(); recordarSala(''); salirDeSala(); } };
+
+// ------------------------------------------------------------------ conexion
+
+const ESPERAS = [1, 2, 3, 5, 8, 10]; // segundos entre intentos
+let caidoDesde = null;
+let intentos = 0;
+let relojReconexion = null;
+let proximoIntento = 0;
+let espectadorActual = false;
+
+/** Se ha cortado el chorro de la sala. */
+function alCaer() {
+  if (!codigoActual) return;
+  if (!caidoDesde) caidoDesde = Date.now();
+  // Si el servidor ha contestado con error (sala borrada, reinicio...) el
+  // navegador ya no reintenta solo: lo hacemos nosotros.
+  if (conexion && conexion.fuente.readyState === 2) programarReconexion();
+  // Un corte de un segundo no merece una pantalla entera
+  setTimeout(() => { if (caidoDesde && codigoActual) pintarCapaConexion(); }, navigator.onLine ? 2500 : 300);
+}
+
+function alVolver() {
+  const habiaCapa = capaActual === 'conexion';
+  caidoDesde = null;
+  intentos = 0;
+  clearTimeout(relojReconexion);
+  relojReconexion = null;
+  ocultarCapa('conexion');
+  if (habiaCapa) { notificar('✅', 'Conectado de nuevo'); vibrar(40); }
+}
+
+function programarReconexion(ya = false) {
+  clearTimeout(relojReconexion);
+  const espera = ya ? 0 : ESPERAS[Math.min(intentos, ESPERAS.length - 1)] * 1000;
+  proximoIntento = Date.now() + espera;
+  relojReconexion = setTimeout(reconectar, espera);
+}
+
+async function reconectar() {
+  if (!codigoActual) return;
+  intentos++;
+  try {
+    await enviar({ tipo: 'entrar', sala: codigoActual, nombre: perfil.nombre, color: perfil.color, espectador: espectadorActual });
+    conectar(codigoActual, espectadorActual);
+  } catch (e) {
+    if (/no existe/i.test(e.message)) { salaPerdida(); return; }
+    programarReconexion();
+  }
+  pintarCapaConexion();
+}
+
+function pintarCapaConexion() {
+  if (!caidoDesde || !codigoActual || capaActual === 'perdida' || capaActual === 'echado') return;
+  const sinInternet = !navigator.onLine;
+  const segs = Math.max(0, Math.ceil((proximoIntento - Date.now()) / 1000));
+  const cerrada = conexion && conexion.fuente.readyState === 2;
+  mostrarCapa({
+    tipo: 'conexion',
+    icono: sinInternet ? '📵' : '📡',
+    titulo: sinInternet ? 'No tienes internet' : 'Se ha perdido la conexión',
+    texto: sinInternet
+      ? 'Tu móvil se ha quedado sin conexión. Revisa la wifi o los datos: en cuanto vuelva, te metemos otra vez en la partida.'
+      : 'No llegamos al servidor. Puede ser la wifi, o que el servidor se esté despertando (tarda unos segundos). <b>Tu sitio en la sala se guarda.</b>',
+    extra: `<div class="cargando"><span></span><span></span><span></span></div>
+      <small>${cerrada && segs > 0 ? `Reintentando en ${segs} s` : 'Reintentando…'}${intentos ? ` · intento ${intentos}` : ''}</small>`,
+    botones: [
+      { texto: '🔄 Reintentar ahora', accion: () => { intentos = 0; programarReconexion(true); } },
+      botonEntrada
+    ]
+  });
+}
+setInterval(() => { if (capaActual === 'conexion') pintarCapaConexion(); }, 1000);
+
+function salaPerdida() {
+  clearTimeout(relojReconexion);
+  caidoDesde = null;
+  if (conexion) conexion.cerrar();
+  const codigo = codigoActual;
+  mostrarCapa({
+    tipo: 'perdida',
+    icono: '🏚️',
+    titulo: 'Esta sala ya no existe',
+    texto: `La sala <b>${esc(codigo)}</b> se ha cerrado. Suele pasar cuando el servidor se reinicia (por ejemplo, al subir una versión nueva). Tu perfil y tus estadísticas siguen guardados.`,
+    botones: [{ texto: '🏠 Ver las salas', accion: () => { ocultarCapa(); recordarSala(''); salirDeSala(); } }]
+  });
+}
+
+window.addEventListener('offline', () => { if (codigoActual) { if (!caidoDesde) caidoDesde = Date.now(); pintarCapaConexion(); } });
+window.addEventListener('online', () => {
+  if (codigoActual && conexion && conexion.fuente.readyState !== 1) { intentos = 0; programarReconexion(true); }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  restaurarTitulo();
+  // Al volver de tener el movil bloqueado, si la conexion murio, se rehace ya
+  if (codigoActual && conexion && conexion.fuente.readyState === 2) { intentos = 0; programarReconexion(true); }
+  if (codigoActual) mantenerPantalla(true);
+});
+
+// ------------------------------------------------------------------ notificaciones
+
+/** Avisos pequeños que se apilan arriba (quién entra, quién se va…). */
+function notificar(icono, texto, tipo = '') {
+  const cont = $('#notis');
+  const n = document.createElement('div');
+  n.className = `noti ${tipo}`;
+  n.innerHTML = `<span class="noti-icono">${icono}</span><span>${texto}</span>`;
+  cont.appendChild(n);
+  while (cont.children.length > 3) cont.firstElementChild.remove();
+  setTimeout(() => { n.classList.add('sale'); setTimeout(() => n.remove(), 400); }, 3600);
+}
+
+/** Compara el estado nuevo con el anterior y avisa de lo que ha cambiado en la sala. */
+function avisarCambios(antes, ahora) {
+  if (!antes || antes.codigo !== ahora.codigo) return;
+  const yo = miId();
+  const previos = new Map(antes.jugadores.map((j) => [j.id, j]));
+  const actuales = new Map(ahora.jugadores.map((j) => [j.id, j]));
+  for (const j of ahora.jugadores) {
+    if (j.id === yo) continue;
+    const p = previos.get(j.id);
+    if (!p) notificar('👋', `<b>${esc(j.nombre)}</b> ha entrado${j.espectador ? ' a mirar' : ''}`, 'entra');
+    else if (p.conectado && !j.conectado) notificar('📴', `<b>${esc(j.nombre)}</b> se ha desconectado`, 'aviso');
+    else if (!p.conectado && j.conectado) notificar('🔌', `<b>${esc(j.nombre)}</b> ha vuelto`, 'entra');
+    else if (p.espectador !== j.espectador) notificar(j.espectador ? '👀' : '🎮', `<b>${esc(j.nombre)}</b> ${j.espectador ? 'ahora mira' : 'ahora juega'}`);
+  }
+  for (const p of antes.jugadores) {
+    if (p.id !== yo && !actuales.has(p.id)) notificar('🚪', `<b>${esc(p.nombre)}</b> se ha ido`, 'aviso');
+  }
+  if (antes.anfitrion !== ahora.anfitrion) {
+    if (ahora.anfitrion === yo) { notificar('👑', '<b>Ahora mandas tú</b> en la sala', 'importante'); vibrar([60, 40, 60]); }
+    else notificar('👑', `Ahora manda <b>${esc((actuales.get(ahora.anfitrion) || {}).nombre || '¿?')}</b>`);
+  }
+  if (ahora.fase === 'sala' && ahora.anfitrion !== yo && JSON.stringify(antes.ajustes) !== JSON.stringify(ahora.ajustes)) {
+    notificar('⚙️', 'El anfitrión ha cambiado los ajustes');
+  }
+}
+
+// ------------------------------------------------------------------ barra de estado
+
+const PASOS = [
+  { id: 'sala', icono: '🛋️', nombre: 'Sala' },
+  { id: 'reparto', icono: '🃏', nombre: 'Cartas' },
+  { id: 'pistas', icono: '✍️', nombre: 'Pistas' },
+  { id: 'debate', icono: '🗳️', nombre: 'Votar' },
+  { id: 'resultado', icono: '🚀', nombre: 'Expulsión' },
+  { id: 'final', icono: '🏁', nombre: 'Final' }
+];
+const PASO_DE_FASE = { sala: 'sala', reparto: 'reparto', pistas: 'pistas', debate: 'debate', resultado: 'resultado', expulsion: 'resultado', adivinar: 'resultado', final: 'final' };
+
+/** Qué está pasando y qué tienes que hacer tú, en una línea. */
+function textoEstado(v) {
+  const r = v.ronda;
+  const yo = v.yo;
+  const s = segundosRestantes();
+  const t = s != null ? ` · ⏱️ ${formatoTiempo(s)}` : '';
+  const conectados = v.jugadores.filter((j) => j.conectado && !j.espectador).length;
+  const anfitrion = nombre(v.anfitrion);
+  switch (v.fase) {
+    case 'sala':
+      if (soyAnfitrion()) return conectados < 3 ? ['👥', 3 - conectados === 1 ? 'Falta 1 jugador para poder empezar. Pasa el código' : `Faltan ${3 - conectados} jugadores para poder empezar. Pasa el código`] : ['✅', 'Todo listo: elige ajustes y pulsa Empezar'];
+      return ['⏳', `Esperando a que ${anfitrion} empiece la partida`];
+    case 'reparto': {
+      const faltan = r.participantes.filter((id) => jugador(id).conectado && !r.listos.includes(id)).length;
+      if (yo.participante && !yo.listo) return ['🃏', r.modo === 'preguntas' ? 'Mira tu pregunta y escribe tu respuesta' : 'Mantén pulsada tu carta y dale a Listo'];
+      return ['⏳', faltan === 1 ? 'Esperando a que 1 jugador vea su carta' : `Esperando a que ${faltan} vean su carta`];
+    }
+    case 'pistas': {
+      if (r.turnoPista === miId()) return ['✍️', `¡Te toca escribir tu palabra!${t}`];
+      return ['✍️', `Escribe ${nombre(r.turnoPista)} · turno ${r.posPista + 1} de ${r.totalPistas}${t}`];
+    }
+    case 'debate': {
+      const vivos = r.vivos.filter((id) => jugador(id).conectado).length;
+      const progreso = `${r.votaron.length}/${vivos} han votado`;
+      if (!yo.participante) return ['👀', `Estás mirando · ${progreso}${t}`];
+      if (!yo.vivo) return ['👻', `Estás eliminado: puedes mirar · ${progreso}${t}`];
+      if (!yo.votos) return ['🗳️', `Debatid y vota antes de que acabe${t}`];
+      return ['✅', `Ya has votado · ${progreso}${t}`];
+    }
+    case 'resultado': return ['🧮', 'Contando los votos…'];
+    case 'expulsion': return ['🚀', 'Expulsión…'];
+    case 'adivinar': return r.adivina === miId() ? ['🎯', `¡Adivina la palabra para ganar!${t}`] : ['🎯', `${nombre(r.adivina)} intenta adivinar la palabra${t}`];
+    case 'final': return soyAnfitrion() ? ['🏁', 'Ronda terminada · pulsa Otra ronda cuando queráis'] : ['🏁', `Ronda terminada · esperando a ${anfitrion}`];
+    default: return ['', ''];
+  }
+}
+
+function pintarBarraEstado() {
+  const barra = $('#barraEstado');
+  if (!estado || !codigoActual) { barra.classList.add('oculto'); return; }
+  barra.classList.remove('oculto');
+  const v = estado;
+  const conPistas = v.ajustes.pistas === 'escritas' && v.ajustes.modo !== 'preguntas';
+  const pasos = PASOS.filter((p) => p.id !== 'pistas' || conPistas);
+  const actual = pasos.findIndex((p) => p.id === PASO_DE_FASE[v.fase]);
+  const clave = pasos.map((p) => p.id).join() + actual;
+  if (barra._clave !== clave) {
+    barra._clave = clave;
+    $('#pasosFase').innerHTML = pasos.map((p, i) => `<span class="paso ${i < actual ? 'hecho' : ''} ${i === actual ? 'actual' : ''}" title="${p.nombre}">
+      <i>${p.icono}</i><small>${p.nombre}</small></span>`).join('<span class="raya"></span>');
+  }
+  const [icono, texto] = textoEstado(v);
+  $('#estadoIcono').textContent = icono;
+  $('#estadoTexto').textContent = texto;
+  barra.classList.toggle('urgente', /Te toca|Vota antes|Adivina/.test(texto) && !/Ya has/.test(texto));
+}
+
+// ------------------------------------------------------------------ extras
+
+/** Que la pantalla no se apague en mitad de la partida (si el móvil lo permite). */
+let bloqueoPantalla = null;
+async function mantenerPantalla(activar) {
+  try {
+    if (activar && 'wakeLock' in navigator && !document.hidden) {
+      if (!bloqueoPantalla) {
+        bloqueoPantalla = await navigator.wakeLock.request('screen');
+        bloqueoPantalla.addEventListener('release', () => { bloqueoPantalla = null; });
+      }
+    } else if (!activar && bloqueoPantalla) {
+      await bloqueoPantalla.release();
+      bloqueoPantalla = null;
+    }
+  } catch { /* no se puede, da igual */ }
+}
+
+/** Si tienes la pestaña en segundo plano, el título te avisa. */
+const TITULO = document.title;
+function avisarEnTitulo(texto) {
+  if (!document.hidden) return;
+  document.title = `${texto} · IMPOSTOR`;
+}
+function restaurarTitulo() { document.title = TITULO; }
+
+/** No cerrar sin querer en plena ronda. */
+window.addEventListener('beforeunload', (e) => {
+  if (estado && estado.yo.participante && estado.yo.vivo && !['sala', 'final'].includes(estado.fase)) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+$$('[data-ayuda]').forEach((b) => b.addEventListener('click', () => $('#modalAyudaOnline').classList.remove('oculto')));
+$('[data-cerrar-ayuda]').addEventListener('click', () => $('#modalAyudaOnline').classList.add('oculto'));
+$('#modalAyudaOnline').addEventListener('click', (e) => { if (e.target.id === 'modalAyudaOnline') e.currentTarget.classList.add('oculto'); });
+
 // ------------------------------------------------------------------ pintar
 
 function pintar(v) {
+  avisarCambios(estado, v);
   estado = v;
   desfase = v.ahora - Date.now();
   $('#btnSalirPartida').classList.remove('oculto');
@@ -545,9 +839,12 @@ function pintar(v) {
     default: break;
   }
   pintarRelojes();
+  pintarBarraEstado();
 }
 
 function alCambiarDeFase(antes, ahora) {
+  const avisosTitulo = { reparto: '🃏 ¡Mira tu carta!', debate: '🗳️ ¡A votar!', final: '🏁 Fin de la ronda' };
+  if (avisosTitulo[ahora]) avisarEnTitulo(avisosTitulo[ahora]);
   if (ahora === 'pistas') { pistasVistas = estado.ronda.pistas.length; turnoAnterior = null; }
   if (antes === 'pistas' && ahora === 'debate') {
     aviso('🗳️ ¡Ya habéis escrito todos! A debatir y votar');
@@ -593,7 +890,7 @@ function pintarRelojes() {
   }
   if (f === 'adivinar') $('#olCronoAdivinar').textContent = s != null ? `⏱️ ${s} s` : '';
 }
-setInterval(pintarRelojes, 250);
+setInterval(() => { pintarRelojes(); if (estado && estado.fin) pintarBarraEstado(); }, 250);
 
 // ------------------------------------------------------------- sala de espera
 
@@ -1061,6 +1358,7 @@ function pintarPistas() {
     const foco = $('#turnoAvatar');
     foco.classList.remove('entra'); void foco.offsetWidth; foco.classList.add('entra');
     if (miTurno) {
+      avisarEnTitulo('✍️ ¡Te toca escribir!');
       $('#inputPista').value = '';
       setTimeout(() => $('#inputPista').focus(), 150);
       vibrar([80, 60, 80]);
@@ -1108,8 +1406,8 @@ function pintarDebate() {
   $('#debateRondaOl').textContent = r.numDebate > 1 ? `Ronda ${r.num} · Vuelta ${r.numDebate}` : `Ronda ${r.num}`;
   $('#olEmpieza').innerHTML = `${avatar(r.empieza, 'mini')} ${esc(nombre(r.empieza))}`;
   $('#olSentido').textContent = r.horario ? 'Sentido de las agujas del reloj ⟳' : 'Sentido contrario a las agujas del reloj ⟲';
-  $('#olOrden').innerHTML = r.orden.filter((id) => r.vivos.includes(id)).map((id, i) => `<span class="orden-item ${i === 0 ? 'primero' : ''}">
-      ${avatar(id, 'mini')}<small>${i + 1}. ${esc(nombre(id))}</small></span>`).join('') +
+  $('#olOrden').innerHTML = r.orden.filter((id) => r.vivos.includes(id)).map((id, i) => `<span class="orden-item ${i === 0 ? 'primero' : ''} ${jugador(id).conectado ? '' : 'sin-conexion'}">
+      ${avatar(id, 'mini')}<small>${i + 1}. ${esc(nombre(id))}${jugador(id).conectado ? '' : ' 📴'}</small></span>`).join('') +
     r.expulsados.map((id) => `<span class="orden-item fuera">
       ${avatar(id, 'mini muerto')}<small>${esc(nombre(id))}${(r.abandonos || []).includes(id) ? ' 🏃' : ''}</small></span>`).join('');
 
@@ -1171,7 +1469,7 @@ function pintarPanelVoto() {
   $('#listaVoto').innerHTML = candidatos.map((id) => {
     const marcado = borrador.includes(id);
     return `<button class="fila-voto ${marcado ? 'marcada' : ''}" data-votar="${esc(id)}" ${!puedeVotar || bloqueado ? 'disabled' : ''}>
-      ${avatar(id)}<span class="nom">${esc(nombre(id))}</span>
+      ${avatar(id)}<span class="nom">${esc(nombre(id))}${jugador(id).conectado ? '' : ' <small class="sin-con">📴 sin conexión</small>'}</span>
       ${r.votaron.includes(id) ? '<span class="ya-voto" title="Ya ha votado">✔ votó</span>' : ''}
       <span class="casilla">${marcado ? '✔' : ''}</span></button>`;
   }).join('');

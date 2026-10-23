@@ -225,7 +225,30 @@ function numImpostoresActual() {
 /* =========================================================
    PANTALLA DE INICIO
    ========================================================= */
+/** Que la pantalla no se apague mientras se juega (si el móvil lo permite). */
+let bloqueoPantalla = null;
+async function mantenerPantalla(activar) {
+  try {
+    if (activar && "wakeLock" in navigator && !document.hidden && !bloqueoPantalla) {
+      bloqueoPantalla = await navigator.wakeLock.request("screen");
+      bloqueoPantalla.addEventListener("release", () => { bloqueoPantalla = null; });
+    } else if (!activar && bloqueoPantalla) {
+      await bloqueoPantalla.release();
+      bloqueoPantalla = null;
+    }
+  } catch (e) { /* no se puede, da igual */ }
+}
+
+/** Fuera del menu y del final, hay una partida en marcha. */
+const enPartida = () => ronda && !["pInicio", "pFinal"].includes(($(".pantalla.activa") || {}).id);
+
+document.addEventListener("visibilitychange", () => { if (!document.hidden && enPartida()) mantenerPantalla(true); });
+window.addEventListener("beforeunload", (e) => {
+  if (enPartida()) { e.preventDefault(); e.returnValue = ""; }
+});
+
 function irA(id) {
+  mantenerPantalla(id !== "pInicio");
   $$(".pantalla").forEach((p) => p.classList.toggle("activa", p.id === id));
   document.body.classList.remove("modo-impostor-visto");
   window.scrollTo({ top: 0, behavior: "smooth" });

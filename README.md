@@ -45,6 +45,10 @@ Montado igual que el billar: un servidor Node sin dependencias, salas con códig
 - **Chat general 💬**: un botón abajo a la derecha abre un chat donde habla todo el mundo, esté en la sala que esté o en la entrada. Se ve desde qué sala escribe cada uno.
 - **Salir en plena partida 🚪**: el botón de la puerta (arriba) te saca aunque la ronda esté en marcha. Quien se va deja de jugar esa ronda y no se lleva puntos; si era el impostor, ganan los inocentes, y si los impostores pasan a ser la mitad, ganan ellos.
 - **Terminar la partida ⏹️**: el anfitrión tiene un botón arriba para cortar la ronda en marcha sin salirse. Se revela quién era el impostor y la palabra, nadie suma puntos y se puede empezar otra.
+- **Siempre sabes qué está pasando**: una barra arriba con los pasos de la ronda (Sala → Cartas → Pistas → Votar → Expulsión → Final), qué tienes que hacer tú ahora y el tiempo que queda.
+- **Avisos de la sala**: quién entra, quién se va, quién se desconecta y vuelve, y quién pasa a mandar.
+- **Pantalla de conexión perdida**: si se corta la wifi o el servidor, sale una pantalla que lo explica y reintenta sola (también puedes reintentar o volver a la entrada). Si la sala ya no existe (por un reinicio del servidor), te lo dice. Si te echan, también.
+- **Prácticos**: la pantalla no se apaga mientras juegas, avisa antes de cerrar la página en plena ronda, el título de la pestaña te avisa si te toca, y en el perfil puedes quitar sonidos o vibración. Se puede **instalar como app** desde el navegador (Añadir a pantalla de inicio).
 - **Salas privadas**: el anfitrión crea una y comparte el código de 4 letras o el enlace de invitación.
 - **Cada uno ve su carta en su móvil.** El servidor solo le manda a cada móvil SU carta, así que nadie puede mirar quién es el impostor.
 - **Pistas escritas ✍️** (ajuste): cada uno escribe su palabra en su móvil cuando le toca, con tiempo por turno, y salen todas en un muro animado antes de votar.

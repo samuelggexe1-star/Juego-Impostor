@@ -6,6 +6,10 @@
   <meta name="theme-color" content="#0b1020" />
   <title>IMPOSTOR · Online</title>
   <link rel="icon" href="logo.jpg" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icono-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Impostor" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="online/online.css" />
 </head>
@@ -24,7 +28,11 @@
       </button>
     </header>
 
-    <div id="bannerRed" class="banner-red oculto">📡 Reconectando…</div>
+    <!-- Qué está pasando ahora mismo (solo dentro de una sala) -->
+    <div id="barraEstado" class="barra-estado oculto" role="status" aria-live="polite">
+      <div class="pasos" id="pasosFase"></div>
+      <div class="barra-linea"><span class="barra-icono" id="estadoIcono">⏳</span><span id="estadoTexto"></span></div>
+    </div>
 
     <!-- ============ SIN SERVIDOR ============ -->
     <section id="pSinServidor" class="pantalla">
@@ -60,6 +68,7 @@
       <button class="btn btn-grande ancho" id="btnCrear">➕ Crear sala privada</button>
       <p class="nota centrado">Te da un código para pasárselo a tus amigos.</p>
       <div class="fila-centrada">
+        <button class="texto-btn" data-ayuda>❓ Cómo se juega</button>
         <a class="texto-btn" href="index.html">📱 Jugar en un solo móvil</a>
       </div>
     </section>
@@ -90,7 +99,10 @@
 
       <button class="btn btn-grande ancho" id="btnEmpezar">▶ EMPEZAR</button>
       <p class="nota centrado" id="notaEmpezar"></p>
-      <div class="fila-centrada"><button class="texto-btn peligro" id="btnIrse">Salir de la sala</button></div>
+      <div class="fila-centrada">
+        <button class="texto-btn" data-ayuda>❓ Cómo se juega</button>
+        <button class="texto-btn peligro" id="btnIrse">Salir de la sala</button>
+      </div>
     </section>
 
     <!-- ============ REPARTO ============ -->
@@ -283,6 +295,10 @@
       <label>Color favorito <span class="nota">(si está libre en la sala)</span></label>
       <div id="perfilColores" class="paleta"></div>
 
+      <h3>En este móvil</h3>
+      <label class="interruptor fila-pref"><span>🔊 Sonidos</span><input type="checkbox" id="prefSonido" /></label>
+      <label class="interruptor fila-pref"><span>📳 Vibración</span><input type="checkbox" id="prefVibracion" /></label>
+
       <h3>Tus estadísticas</h3>
       <div id="perfilStats" class="stats"></div>
 
@@ -306,6 +322,42 @@
     </form>
   </div>
 
+  <!-- ============ PANTALLA DE ESTADO (conexión perdida, sala cerrada…) ============ -->
+  <div id="capaEstado" class="capa-estado oculto" role="alertdialog" aria-modal="true" aria-labelledby="capaTitulo">
+    <div class="capa-caja">
+      <div class="capa-icono" id="capaIcono">📡</div>
+      <h2 id="capaTitulo">Conexión perdida</h2>
+      <p id="capaTexto"></p>
+      <div id="capaExtra" class="capa-extra"></div>
+      <div id="capaBotones" class="capa-botones"></div>
+    </div>
+  </div>
+
+  <!-- ============ AYUDA ============ -->
+  <div class="modal oculto" id="modalAyudaOnline" role="dialog" aria-modal="true" aria-labelledby="tAyudaOl">
+    <div class="modal-caja">
+      <div class="modal-cabecera"><h2 id="tAyudaOl">❓ Cómo se juega online</h2><button class="icono-btn" data-cerrar-ayuda>✕</button></div>
+      <ol class="ayuda">
+        <li><b>Entrad todos en la misma sala</b>: una pública (Sala 1, 2 o 3) o una privada con código.</li>
+        <li>El primero que entra es el <b>anfitrión 👑</b>: elige los ajustes y empieza.</li>
+        <li><b>Mantén pulsada tu carta</b> para ver tu palabra sin que la vean los demás. El impostor no la tiene.</li>
+        <li><b>Dad pistas</b>: cada uno dice (o escribe, según los ajustes) UNA palabra relacionada con la suya.</li>
+        <li><b>Debatid y votad</b> antes de que se acabe el tiempo. Puedes cambiar tu voto hasta el final.</li>
+        <li>Sale el más votado. Si era el impostor… ¡ganáis! Si no, se sigue jugando.</li>
+      </ol>
+      <h3>Lo que significan las cosas</h3>
+      <ul class="ayuda leyenda">
+        <li><b>👑</b> manda en la sala · <b>👀</b> espectador · <b>📴</b> sin conexión · <b>🏃</b> se fue a mitad</li>
+        <li><b>⏹️</b> (solo anfitrión) termina la ronda sin que nadie sume puntos</li>
+        <li><b>🚪</b> sales de la sala, aunque la ronda esté en marcha</li>
+        <li><b>💬</b> chat general con todo el mundo, estén en la sala que estén</li>
+      </ul>
+      <h3>Puntos</h3>
+      <p class="nota">Inocentes que ganan: +1 · Votar al impostor: +1 extra · Impostor que gana: +3.</p>
+    </div>
+  </div>
+
+  <div id="notis" class="notis" aria-live="polite"></div>
   <div id="aviso" class="aviso oculto" role="status"></div>
 
   <script src="palabras.js"></script>
