@@ -20,6 +20,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crearSalas, limpiarNombre } from './online/salas.js';
 import { cargarBanco } from './online/banco.js';
+import { crearChat } from './online/chat.js';
 
 const RAIZ = path.dirname(fileURLToPath(import.meta.url));
 const PUERTO = Number(process.env.PORT) || 8080;
@@ -40,6 +41,37 @@ const TIPOS = {
 const PRIVADO = new Set(['/server.js', '/package.json', '/render.yaml']);
 
 const Salas = crearSalas({ banco: cargarBanco() });
+const Chat = crearChat();
+
+/** Quien tiene abierto el chat general (todo el mundo en la pagina online). */
+const oyentesChat = new Set();
+
+function repartirChat(tipo, datos) {
+  for (const res of oyentesChat) {
+    if (!escribir(res, tipo, datos)) oyentesChat.delete(res);
+  }
+}
+
+const conectadosChat = () => repartirChat('gente', { n: oyentesChat.size });
+
+function abrirChat(req, res) {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  });
+  res.write(': hola\n\n');
+  oyentesChat.add(res);
+  escribir(res, 'historial', { mensajes: Chat.mensajes });
+  conectadosChat();
+  const latido = setInterval(() => { try { res.write(': lat\n\n'); } catch { /* cerrada */ } }, 20000);
+  req.on('close', () => {
+    clearInterval(latido);
+    oyentesChat.delete(res);
+    conectadosChat();
+  });
+}
 
 /** Quien esta escuchando cada sala: codigo -> Set de { res, yo }. */
 const oyentes = new Map();
@@ -172,6 +204,16 @@ async function recibir(req, res) {
   const codigo = codigoDe(cuerpo.sala);
   if (!yo) return json(res, 400, { error: 'falta yo' });
 
+  if (cuerpo.tipo === 'chat') {
+    // Se dice desde donde escribe: el nombre de la sala publica, o "Sala privada"
+    const sala = codigo ? Salas.salas.get(codigo) : null;
+    const donde = sala ? (sala.publica ? sala.nombre : 'Sala privada') : null;
+    const r = Chat.publicar({ id: yo, nombre: limpiarNombre(cuerpo.nombre), color: cuerpo.color, donde, texto: cuerpo.texto });
+    if (r.error) return json(res, 400, { error: r.error });
+    repartirChat('mensaje', r.mensaje);
+    return json(res, 200, { ok: true });
+  }
+
   if (cuerpo.tipo === 'crear') {
     const sala = Salas.crear(cuerpo.nombre, yo, cuerpo.color);
     return json(res, 200, { codigo: sala.codigo });
@@ -196,6 +238,7 @@ const servidor = http.createServer((req, res) => {
     return json(res, 200, { ok: true, juego: 'impostor', salas: Salas.salas.size });
   }
   if (url.pathname === '/api/eventos' && req.method === 'GET') return abrirEventos(req, res, url);
+  if (url.pathname === '/api/chat' && req.method === 'GET') return abrirChat(req, res);
   if (url.pathname === '/api/salas' && req.method === 'GET') return json(res, 200, { salas: Salas.publicas() });
   if (url.pathname === '/api/enviar' && req.method === 'POST') return recibir(req, res);
   if (url.pathname === '/api/foto' && req.method === 'GET') {

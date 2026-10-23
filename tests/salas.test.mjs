@@ -594,3 +594,79 @@ test('tras una expulsion se vuelve a escribir otra tanda', () => {
   assert.equal(sala.fase, 'pistas');
   assert.ok(!sala.ronda.colaPistas.includes(inocente));
 });
+
+// ------------------------------------------------------------------ salir a mitad
+
+test('salir a mitad de ronda: deja de jugar y no se lleva puntos', () => {
+  const { S, sala, ids, avanzar } = partida({ adivinar: false });
+  todosListos(S, sala, ids);
+  const [imp] = impostoresDe(sala);
+  const inocente = ids.find((id) => id !== imp);
+  S.votar(sala.codigo, inocente, [imp]);
+  S.irse(sala.codigo, inocente);
+  assert.ok(!sala.ronda.vivos.has(inocente));
+  assert.ok(!(inocente in sala.ronda.votos), 'su voto sigue contando');
+  assert.equal(sala.fase, 'debate', 'con 4 dentro la ronda sigue');
+  votarYContar(S, sala, avanzar, todosA(sala, imp));
+  avanzar(DURACION.resultado);
+  avanzar(DURACION.expulsion);
+  assert.equal(sala.ronda.resultado.ganan, 'inocentes');
+  assert.equal(sala.puntos[inocente], undefined);
+});
+
+test('si el impostor se va, ganan los inocentes', () => {
+  const { S, sala, ids } = partida();
+  todosListos(S, sala, ids);
+  const [imp] = impostoresDe(sala);
+  S.irse(sala.codigo, imp);
+  assert.equal(sala.fase, 'final');
+  assert.equal(sala.ronda.resultado.ganan, 'inocentes');
+  assert.match(sala.ronda.resultado.subtitulo, /se ha ido/);
+});
+
+test('si se van inocentes hasta que los impostores son la mitad, ganan ellos', () => {
+  const { S, sala, ids } = partida();
+  todosListos(S, sala, ids);
+  const [imp] = impostoresDe(sala);
+  const inocentes = ids.filter((id) => id !== imp);
+  S.irse(sala.codigo, inocentes[0]);
+  S.irse(sala.codigo, inocentes[1]);
+  assert.equal(sala.fase, 'debate');
+  S.irse(sala.codigo, inocentes[2]);
+  assert.equal(sala.fase, 'final');
+  assert.equal(sala.ronda.resultado.ganan, 'impostores');
+});
+
+test('salir mientras te toca escribir pasa el turno al siguiente', () => {
+  const { S, sala, ids } = partida({ pistas: 'escritas' });
+  todosListos(S, sala, ids);
+  const [primero, segundo] = sala.ronda.orden;
+  if (sala.ronda.impostores.has(primero)) return; // si se va el impostor se acaba, ya probado arriba
+  S.irse(sala.codigo, primero);
+  assert.equal(S.vista(sala, segundo).ronda.turnoPista, segundo);
+});
+
+// ------------------------------------------------------------------ chat general
+
+import { crearChat, MAX_MENSAJES, ESPERA_MS } from '../online/chat.js';
+
+test('chat: guarda mensajes, limpia el texto y no deja inundar', () => {
+  let t = 0;
+  const C = crearChat({ ahora: () => t });
+  const r = C.publicar({ id: 'a', nombre: 'Samuel', color: 'rojo', donde: 'Sala 1', texto: '  hola   que tal  ' });
+  assert.equal(r.mensaje.texto, 'hola que tal');
+  assert.equal(r.mensaje.donde, 'Sala 1');
+  assert.ok(C.publicar({ id: 'a', nombre: 'Samuel', texto: 'otra' }).error, 'deja mandar demasiado rapido');
+  t += ESPERA_MS;
+  assert.ok(C.publicar({ id: 'a', nombre: 'Samuel', texto: 'hola que tal' }).error, 'deja repetir lo mismo');
+  assert.ok(!C.publicar({ id: 'a', nombre: 'Samuel', texto: 'otra cosa' }).error);
+  assert.ok(C.publicar({ id: 'b', nombre: 'Bea', texto: '   ' }).error);
+});
+
+test('chat: solo se quedan los ultimos mensajes', () => {
+  let t = 0;
+  const C = crearChat({ ahora: () => t });
+  for (let i = 0; i < MAX_MENSAJES + 20; i++) { t += ESPERA_MS; C.publicar({ id: 'x' + (i % 3), nombre: 'X', texto: 'm' + i }); }
+  assert.equal(C.mensajes.length, MAX_MENSAJES);
+  assert.equal(C.mensajes.at(-1).texto, 'm' + (MAX_MENSAJES + 19));
+});

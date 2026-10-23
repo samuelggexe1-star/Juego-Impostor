@@ -4,7 +4,7 @@
 // conteste con el estado nuevo.
 
 import {
-  miId, cargarPerfil, guardarPerfil, ultimaSala, recordarSala, enviar, escuchar, hayServidor,
+  miId, cargarPerfil, guardarPerfil, ultimaSala, recordarSala, enviar, escuchar, escucharChat, hayServidor,
   enlaceDeSala, salaDelEnlace, SERVIDOR_ONLINE
 } from './red.js';
 
@@ -129,6 +129,7 @@ async function arrancar() {
   }
   irA('pEntrada');
   pintarPublicas();
+  abrirChatGeneral();
   if (!perfil.nombre) { abrirPerfil(true); return; }
   // Recargar la pagina en plena partida te devuelve a tu sitio
   if (deEnlace) unirse(deEnlace);
@@ -188,6 +189,20 @@ function conectar(codigo, espectador = false) {
   });
 }
 
+// El boton de la puerta: salir de la sala aunque la partida este en marcha
+$('#btnSalirPartida').addEventListener('click', async () => {
+  if (!codigoActual) return;
+  const enMarcha = estado && !['sala', 'final'].includes(estado.fase) && estado.yo.participante && estado.yo.vivo;
+  const pregunta = enMarcha
+    ? '¿Salir de la partida? Dejarás de jugar esta ronda y no te llevarás puntos.'
+    : '¿Salir de la sala?';
+  if (!confirm(pregunta)) return;
+  await mandar('irse');
+  recordarSala('');
+  salirDeSala();
+  aviso('🚪 Has salido de la sala');
+});
+
 function salirDeSala() {
   if (conexion) conexion.cerrar();
   conexion = null;
@@ -195,6 +210,7 @@ function salirDeSala() {
   codigoActual = '';
   faseAnterior = null;
   history.replaceState(null, '', location.pathname);
+  $('#btnSalirPartida').classList.add('oculto');
   pintarPerfil();
   irA('pEntrada');
   pintarPublicas();
@@ -246,6 +262,94 @@ async function pintarPublicas() {
   $$('[data-mirar]').forEach((b) => b.addEventListener('click', () => unirse(b.dataset.mirar, true)));
 }
 setInterval(pintarPublicas, 4000);
+
+// ------------------------------------------------------------------ chat general
+
+let chatAbierto = false;
+let chatNuevos = 0;
+let chatFuente = null;
+
+function abrirChatGeneral() {
+  if (chatFuente) return;
+  $('#btnChat').classList.remove('oculto');
+  chatFuente = escucharChat({
+    historial: ({ mensajes }) => {
+      const cont = $('#chatMensajes');
+      if (mensajes.length) cont.innerHTML = '';
+      mensajes.forEach((m) => pintarMensaje(m, false));
+      bajarChat();
+    },
+    mensaje: (m) => {
+      pintarMensaje(m, true);
+      if (m.autor === miId()) return;
+      if (!chatAbierto) {
+        chatNuevos++;
+        const globo = $('#chatNuevos');
+        globo.textContent = chatNuevos > 9 ? '9+' : chatNuevos;
+        globo.classList.remove('oculto');
+        const b = $('#btnChat');
+        b.classList.remove('rebota'); void b.offsetWidth; b.classList.add('rebota');
+      }
+      tono(1046, 0.06, 0.05, 'sine');
+    },
+    gente: ({ n }) => { $('#chatGente').textContent = n === 1 ? 'Solo estás tú' : `${n} conectados`; },
+    caido: () => { $('#chatGente').textContent = 'Reconectando…'; }
+  });
+}
+
+function pintarMensaje(m, nuevo) {
+  const cont = $('#chatMensajes');
+  if (cont.querySelector('.nota')) cont.innerHTML = '';
+  const mio = m.autor === miId();
+  const hora = new Date(m.t).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const div = document.createElement('div');
+  div.className = `mensaje ${mio ? 'mio' : ''} ${nuevo ? 'nuevo' : ''}`;
+  div.style.setProperty('--c', COLORES[m.color] || '#64748b');
+  div.innerHTML = `${mio ? '' : `<span class="inicial">${esc((m.nombre[0] || '?').toUpperCase())}</span>`}
+    <div class="burbuja">
+      ${mio ? '' : `<span class="mensaje-autor">${esc(m.nombre)}${m.donde ? ` <small>· ${esc(m.donde)}</small>` : ''}</span>`}
+      <span class="mensaje-texto">${esc(m.texto)}</span>
+      <small class="mensaje-hora">${hora}</small>
+    </div>`;
+  const abajo = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 80;
+  cont.appendChild(div);
+  while (cont.children.length > 120) cont.firstElementChild.remove();
+  if (abajo || mio) bajarChat();
+}
+
+function bajarChat() {
+  const cont = $('#chatMensajes');
+  cont.scrollTop = cont.scrollHeight;
+}
+
+function mostrarChat(abrir) {
+  chatAbierto = abrir;
+  $('#hojaChat').classList.toggle('abierta', abrir);
+  $('#hojaChat').setAttribute('aria-hidden', String(!abrir));
+  $('#btnChat').classList.toggle('activo', abrir);
+  if (abrir) {
+    chatNuevos = 0;
+    $('#chatNuevos').classList.add('oculto');
+    bajarChat();
+    setTimeout(() => $('#inputChat').focus(), 250);
+  }
+}
+
+$('#btnChat').addEventListener('click', () => mostrarChat(!chatAbierto));
+$('#cerrarChat').addEventListener('click', () => mostrarChat(false));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && chatAbierto) mostrarChat(false); });
+
+$('#formChat').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!perfil.nombre) { abrirPerfil(true); return; }
+  const input = $('#inputChat');
+  const texto = input.value.trim();
+  if (!texto) return;
+  try {
+    await enviar({ tipo: 'chat', sala: codigoActual, nombre: perfil.nombre, color: estado ? jugador(miId()).color : perfil.color, texto });
+    input.value = '';
+  } catch (err) { aviso(err.message); }
+});
 
 // ------------------------------------------------------------------ perfil
 
@@ -412,6 +516,7 @@ function apuntarEstadisticas() {
 function pintar(v) {
   estado = v;
   desfase = v.ahora - Date.now();
+  $('#btnSalirPartida').classList.remove('oculto');
 
   // En la sala, el chip de arriba enseña el color que te ha tocado de verdad
   $('#chipAvatar').innerHTML = avatar(miId(), 'mini');
@@ -994,10 +1099,10 @@ function pintarDebate() {
   $('#debateRondaOl').textContent = r.numDebate > 1 ? `Ronda ${r.num} · Vuelta ${r.numDebate}` : `Ronda ${r.num}`;
   $('#olEmpieza').innerHTML = `${avatar(r.empieza, 'mini')} ${esc(nombre(r.empieza))}`;
   $('#olSentido').textContent = r.horario ? 'Sentido de las agujas del reloj ⟳' : 'Sentido contrario a las agujas del reloj ⟲';
-  $('#olOrden').innerHTML = r.orden.map((id, i) => `<span class="orden-item ${i === 0 ? 'primero' : ''}">
+  $('#olOrden').innerHTML = r.orden.filter((id) => r.vivos.includes(id)).map((id, i) => `<span class="orden-item ${i === 0 ? 'primero' : ''}">
       ${avatar(id, 'mini')}<small>${i + 1}. ${esc(nombre(id))}</small></span>`).join('') +
     r.expulsados.map((id) => `<span class="orden-item fuera">
-      ${avatar(id, 'mini muerto')}<small>${esc(nombre(id))}</small></span>`).join('');
+      ${avatar(id, 'mini muerto')}<small>${esc(nombre(id))}${(r.abandonos || []).includes(id) ? ' 🏃' : ''}</small></span>`).join('');
 
   let instr;
   if (r.modo === 'preguntas') instr = 'Estas son las respuestas. ¿Cuál no encaja con la pregunta?';
@@ -1242,6 +1347,9 @@ function pintarFinal(recienLlegado) {
       ${h.ids.map((id) => `<span class="expulsado-final ${f.impostores.includes(id) ? 'era-impostor' : ''}">${avatar(id, 'mini')} ${esc(nombre(id))}
         <small>${f.impostores.includes(id) ? '🔪 impostor' : '😇 inocente'}</small></span>`).join('')}</div>`).join('');
     cajas.push(`<div><small>Expulsados</small>${filas}</div>`);
+  }
+  if (r.abandonos && r.abandonos.length) {
+    cajas.push(`<div><small>Se fueron a mitad 🏃</small><b class="con-avatares">${r.abandonos.map((id) => `${avatar(id, 'mini')} ${esc(nombre(id))}`).join('  ')}</b></div>`);
   }
   if (esPregunta && r.respuestas) cajas.push(`<div><small>Respuestas</small>${htmlRespuestas(f.impostores)}</div>`);
   $('#olRevelacion').innerHTML = cajas.join('');

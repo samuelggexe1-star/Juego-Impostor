@@ -17,6 +17,7 @@
         <h1>IMPOSTOR <span class="etiqueta-online">ONLINE</span></h1>
         <p class="lead">Cada uno con su móvil.</p>
       </div>
+      <button class="boton-salir oculto" id="btnSalirPartida" title="Salir de la partida" aria-label="Salir de la partida">🚪</button>
       <button class="chip-perfil" id="chipPerfil" title="Mi perfil">
         <span id="chipAvatar"></span><span id="chipNombre" class="chip-nombre">Crear perfil</span>
       </button>
@@ -286,6 +287,22 @@
 
       <button class="btn ancho" id="btnGuardarPerfil">Guardar</button>
     </div>
+  </div>
+
+  <!-- ============ CHAT GENERAL ============ -->
+  <button class="boton-chat oculto" id="btnChat" aria-label="Abrir el chat general">
+    💬<span class="globo-nuevos oculto" id="chatNuevos">0</span>
+  </button>
+  <div class="hoja-chat" id="hojaChat" role="dialog" aria-label="Chat general" aria-hidden="true">
+    <div class="chat-cabecera">
+      <div><b>💬 Chat general</b><small id="chatGente">Conectando…</small></div>
+      <button class="icono-btn" id="cerrarChat" aria-label="Cerrar el chat">✕</button>
+    </div>
+    <div class="chat-mensajes" id="chatMensajes"><p class="nota centrado">Aquí habla todo el mundo, esté en la sala que esté. ¡Saluda! 👋</p></div>
+    <form class="chat-form" id="formChat">
+      <input id="inputChat" type="text" maxlength="200" autocomplete="off" enterkeyhint="send" placeholder="Escribe un mensaje…" />
+      <button class="btn" type="submit" aria-label="Enviar">➤</button>
+    </form>
   </div>
 
   <div id="aviso" class="aviso oculto" role="status"></div>

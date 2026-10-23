@@ -99,6 +99,22 @@ export function escuchar(sala, nombre, color, espectador, manejadores) {
   return { cerrar: () => fuente.close(), fuente };
 }
 
+/** El chat general: un chorro aparte, para todo el mundo. */
+export function escucharChat(manejadores) {
+  const fuente = new EventSource('/api/chat');
+  for (const [tipo, fn] of Object.entries(manejadores)) {
+    if (tipo === 'abierto' || tipo === 'caido') continue;
+    fuente.addEventListener(tipo, (ev) => {
+      let datos = null;
+      try { datos = JSON.parse(ev.data); } catch { return; }
+      fn(datos);
+    });
+  }
+  fuente.onopen = () => manejadores.abierto && manejadores.abierto();
+  fuente.onerror = () => manejadores.caido && manejadores.caido();
+  return fuente;
+}
+
 /** ¿Hay un servidor del impostor detras de esta pagina? (en GitHub Pages no) */
 export async function hayServidor(tope = 3000) {
   try {

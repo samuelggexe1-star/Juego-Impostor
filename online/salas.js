@@ -310,6 +310,7 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       ultimoVoto: null,
       historialExpulsiones: [],
       pistas: [],          // las palabras escritas: { id, texto, vuelta, tanda, saltado }
+      abandonos: [],       // los que se han ido en mitad de la ronda
       colaPistas: [],
       posPista: 0,
       expulsion: null,
@@ -566,14 +567,56 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
     const { siguiente, resultado } = sala.ronda.expulsion;
     if (siguiente === 'final') terminar(sala, resultado);
     else if (siguiente === 'adivinar') { sala.fase = 'adivinar'; sala.fin = ahora() + DURACION.adivinar; }
-    else empezarDebate(sala);
+    else if (!finPorAbandono(sala)) empezarDebate(sala);
+  };
+
+  /**
+   * Alguien se va en mitad de la ronda: sale de la partida como si le hubieran
+   * expulsado, sin puntos. Si con eso ya no queda partida, se acaba.
+   */
+  const abandonar = (sala, id) => {
+    const r = sala.ronda;
+    if (!r || faseEs(sala, 'sala', 'final') || !r.vivos.has(id)) return;
+    r.vivos.delete(id);
+    r.abandonos.push(id);
+    // Sus votos ya no cuentan, ni los que habia contra el
+    delete r.votos[id];
+    for (const [votante, lista] of Object.entries(r.votos)) {
+      const quedan = lista.filter((x) => x !== id);
+      if (quedan.length) r.votos[votante] = quedan; else delete r.votos[votante];
+    }
+    if (sala.fase === 'adivinar' && r.adivina === id) {
+      r.adivinanza = { texto: null, acierto: false };
+      terminar(sala, 'inocentes', { seFue: id });
+      return;
+    }
+    // En el recuento o la expulsion se resuelve al seguir
+    if (faseEs(sala, 'resultado', 'expulsion', 'adivinar')) return;
+    finPorAbandono(sala, id);
+  };
+
+  /** ¿Se acaba la ronda porque se ha ido gente? */
+  const finPorAbandono = (sala, quien = null) => {
+    const r = sala.ronda;
+    if (!r.abandonos.length) return false;
+    if (r.trampa) {
+      if (r.vivos.size < 2) { terminar(sala, 'abandono'); return true; }
+      return false;
+    }
+    const impVivos = [...r.impostores].filter((x) => r.vivos.has(x)).length;
+    const inoVivos = r.vivos.size - impVivos;
+    if (impVivos === 0) { terminar(sala, 'inocentes', { seFue: quien }); return true; }
+    if (impVivos >= inoVivos) { terminar(sala, 'impostor', { seFue: quien }); return true; }
+    return false;
   };
 
   const terminar = (sala, tipo, extra = {}) => {
     const r = sala.ronda;
     const delta = {};
-    const sumar = (id, n) => { delta[id] = (delta[id] || 0) + n; };
+    // Quien se va a mitad de ronda no se lleva puntos
+    const sumar = (id, n) => { if (!r.abandonos.includes(id)) delta[id] = (delta[id] || 0) + n; };
     const inocentes = r.participantes.filter((id) => !r.impostores.has(id));
+    const seFue = extra.seFue ? nombreDe(sala, extra.seFue) : null;
     const impostores = [...r.impostores];
     const varios = impostores.length > 1;
     let titulo; let subtitulo; let ganan;
@@ -583,12 +626,14 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
         titulo = '¡Ganan los inocentes!'; ganan = 'inocentes';
         subtitulo = varios ? 'Habéis pillado a todos los impostores.' : 'Habéis pillado al impostor.';
         if (extra.fallo) subtitulo += ' Y no adivinó la palabra.';
+        if (seFue) subtitulo = `${seFue} era el impostor… ¡y se ha ido! 🏃`;
         inocentes.forEach((id) => sumar(id, 1));
         r.acertantes.forEach((id) => { if (!r.impostores.has(id)) sumar(id, 1); });
         break;
       case 'impostor':
         titulo = varios ? '¡Ganan los impostores!' : '¡Gana el impostor!'; ganan = 'impostores';
         subtitulo = extra.robo ? 'Lo pillasteis… ¡pero adivinó la palabra!' : 'Se os ha colado bien.';
+        if (seFue) subtitulo = `${seFue} se ha ido y ya no quedan inocentes suficientes.`;
         impostores.forEach((id) => sumar(id, 3));
         break;
       case 'trampaAcertada':
@@ -603,6 +648,10 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       case 'todos':
         titulo = '¡Erais TODOS impostores!'; ganan = 'nadie';
         subtitulo = 'Nadie tenía la palabra 😂';
+        break;
+      case 'abandono':
+        titulo = 'Ronda terminada'; ganan = 'nadie';
+        subtitulo = 'Se ha ido demasiada gente 🏃';
         break;
       default:
         titulo = 'Ronda terminada'; ganan = 'nadie'; subtitulo = '';
@@ -678,6 +727,7 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
         ? { expulsados: r.expulsion.expulsados, roles: r.expulsion.roles, textos: r.expulsion.textos }
         : null,
       expulsados: r.participantes.filter((id) => !r.vivos.has(id)),
+      abandonos: r.abandonos,
       pistas: r.pistas,
       pistasEscritas: sala.ajustes.pistas === 'escritas' && r.modo !== 'preguntas',
       turnoPista: fase === 'pistas' ? r.colaPistas[r.posPista] : null,
@@ -817,8 +867,10 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
       if (sala.fase === 'sala' || !(sala.ronda && sala.ronda.participantes.includes(id))) {
         sala.jugadores = sala.jugadores.filter((j) => j.id !== id);
       } else {
+        // Se va en plena partida: deja de jugar esta ronda y no cuenta para el final
         const j = jugadorDe(sala, id);
-        if (j) j.conectado = false;
+        if (j) { j.conectado = false; j.seFue = true; }
+        abandonar(sala, id);
       }
       repasarAnfitrion(sala);
       if (sala.ronda) { comprobarReparto(sala); comprobarVotos(sala); comprobarPistas(sala); }
