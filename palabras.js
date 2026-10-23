@@ -5,139 +5,99 @@
    - "Gemela" es una palabra parecida pero distinta.
      Se usa para:
        · la pista "palabra parecida" del impostor
-       · el modo Undercover (el impostor recibe la gemela
+       · el modo Despistado (el impostor recibe la gemela
          y NO sabe que es el impostor)
    - Si una palabra no tiene gemela, el juego coge otra
      palabra al azar de la misma categoría.
+   Reglas para que el juego funcione bien:
+   - Palabras sueltas o nombres de cosas, nunca frases.
+   - Que las conozca todo el mundo (y las gemelas también).
    Para añadir palabras basta con meter otra línea.
    ========================================================= */
 
 const CATEGORIAS = {
-  "Vosotros": { icono: "👥", jugadores: true, palabras: [
-    "{J}", "El móvil de {J}", "La habitación de {J}", "La madre de {J}", "El historial de Google de {J}",
-    "{J} bailando reguetón", "{J} en un examen", "{J} recién levantado", "{J} enfadado", "{J} ligando",
-    "{J} en la playa", "La mochila de {J}", "Los pies de {J}", "La risa de {J}", "{J} conduciendo",
-    "{J} cantando en la ducha", "{J} de mayor", "{J} de bebé", "Los calcetines de {J}", "El último audio de {J}",
-    "{J} en el gimnasio", "El peinado de {J}", "{J} jugando al FIFA", "{J} pidiendo en el McDonald's",
-    "La boda de {J}", "{J} llorando con una peli", "{J} a las 3 de la mañana", "Las zapatillas de {J}",
-    "{J} en un apocalipsis zombi", "{J} copiando en un examen", "{J} perdiendo al Clash Royale",
-    "La galería de fotos de {J}", "{J} con 80 años", "{J} hablando con la profe", "El TikTok de {J}",
-    "{J} intentando cocinar", "{J} en una discoteca", "{J} con miedo", "La nevera de {J}", "{J} ganando la lotería"
-  ]},
-
-  "Cosas raras": { icono: "🤢", palabras: [
-    "Pedo en el ascensor / Eructo en clase", "Eructo en clase / Pedo en el ascensor",
-    "Moco debajo de la mesa / Chicle debajo de la mesa", "Chicle debajo de la mesa / Moco debajo de la mesa",
-    "Mear en la piscina / Mear en el mar", "Mear en el mar / Mear en la piscina",
-    "Calcetines sudados / Zapatillas sudadas", "Pelo en la comida / Mosca en la sopa", "Mosca en la sopa / Pelo en la comida",
-    "Cortarse las uñas en el salón / Cortarse las uñas de los pies en la cama", "Hurgarse la nariz / Morderse las uñas",
-    "Morderse las uñas / Hurgarse la nariz", "Oler la ropa antes de ponértela / Repetir camiseta tres días",
-    "Repetir camiseta tres días / Oler la ropa antes de ponértela", "Llamar mamá a la profe / Saludar a quien no te saludaba",
-    "Saludar a quien no te saludaba / Llamar mamá a la profe", "Audio al grupo equivocado / Like a una foto de hace 3 años",
-    "Like a una foto de hace 3 años / Audio al grupo equivocado", "Que te pillen cantando solo / Que te pillen hablando solo",
-    "Caerse en el recreo / Tropezar en las escaleras", "Que te suene la tripa en un examen / Pedo silencioso en un examen",
-    "Pedo silencioso en un examen / Que te suene la tripa en un examen", "Babear durmiendo / Roncar en clase",
-    "Roncar en clase / Babear durmiendo", "Cereales con agua / Cereales con zumo", "Pizza con piña / Tortilla sin cebolla",
-    "Tortilla sin cebolla / Tortilla con cebolla", "Ketchup en la paella / Mayonesa en la pizza",
-    "Mayonesa en la pizza / Ketchup en la paella", "Zumo después de lavarte los dientes / Leche caducada",
-    "Leche caducada / Yogur caducado", "Pisar caca de perro / Pisar un chicle", "Pisar un chicle / Pisar caca de perro",
-    "Lamer la tapa del yogur / Lamer el plato", "Dormir con zapatos / Ducharse con calcetines",
-    "Ducharse con calcetines / Dormir con zapatos", "Olor a pies / Olor a sobaco", "Olor a sobaco / Olor a pies",
-    "Cera de los oídos / Legaña", "Legaña / Cera de los oídos", "Uña encarnada / Callo en el pie",
-    "Grano a punto de explotar / Espinilla", "Vomitar en la guagua / Marearse en el barco",
-    "Abuela que pellizca los mofletes / Tía que pregunta por la novia", "Tía que pregunta por la novia / Abuela que pellizca los mofletes",
-    "Selfie en el baño / Selfie en el ascensor", "Masticar con la boca abierta / Sorber la sopa",
-    "Comerse los mocos / Comerse las uñas", "Culpar al perro de tu pedo / Culpar a tu hermano de tu pedo",
-    "Dormir con la luz encendida / Mirar debajo de la cama", "Bailar como un pato / Cantar mal a propósito",
-    "Imitar a un profe / Funar a un profe", "Ducharse una vez por semana / Lavarse los dientes una vez al día",
-    "Mandar un 'te quiero' a tu profe / Mandar un 'te quiero' a tu jefe", "Quedarse encerrado en el baño / Quedarse sin papel en el baño",
-    "Quedarse sin papel en el baño / Quedarse encerrado en el baño", "Comer del suelo / Regla de los 5 segundos",
-    "Calzoncillos del revés / Camiseta del revés", "Bragueta abierta / Calzoncillos del revés",
-    "Llorar con un anuncio / Llorar con Coco", "Hablar en sueños / Ser sonámbulo", "Ser sonámbulo / Hablar en sueños"
-  ]},
-
   "Personas": { icono: "🧑", palabras: [
     "Samuel", "Adriel", "Álvaro", "Pedro", "Mateo", "Alejandro", "Diego", "Fran", "David", "Daniel", "Ryan", "67"
   ]},
 
   "Animales": { icono: "🐶", palabras: [
-    "Perro / Lobo", "Gato / Tigre", "Conejo / Liebre", "Tiburón / Orca", "Tortuga / Caracol", "Caballo / Burro",
-    "León / Tigre", "Loro / Periquito", "Panda / Koala", "Erizo / Puercoespín", "Camaleón / Lagarto",
+    "Perro / Lobo", "Gato / Tigre", "Conejo / Hámster", "Tiburón / Delfín", "Tortuga / Caracol", "Caballo / Burro",
+    "León / Tigre", "Loro / Periquito", "Panda / Koala", "Erizo / Topo", "Camaleón / Lagartija",
     "Delfín / Ballena", "Pulpo / Calamar", "Murciélago / Búho", "Zorro / Lobo", "Rana / Sapo",
-    "Pingüino / Foca", "Gaviota / Paloma", "Cangrejo / Langosta", "Ciervo / Alce", "Cabra / Oveja",
-    "Serpiente / Lagarto", "Elefante / Rinoceronte", "Oso / Gorila", "Nutria / Castor", "Jirafa / Camello",
-    "Cocodrilo / Caimán", "Mono / Gorila", "Hámster / Ratón", "Abeja / Avispa", "Mariposa / Polilla",
-    "Hormiga / Termita", "Araña / Escorpión", "Águila / Halcón", "Vaca / Toro", "Cerdo / Jabalí",
-    "Gallina / Pato", "Canguro / Koala", "Medusa / Pulpo", "Caracol / Babosa", "Hipopótamo / Rinoceronte",
-    "Pez payaso / Pez globo", "Flamenco / Cigüeña", "Mosquito / Mosca",
-    "Chiska", "Bimba", "Dori", "Frida"
+    "Pingüino / Foca", "Gaviota / Paloma", "Cangrejo / Langosta", "Ciervo / Reno", "Cabra / Oveja",
+    "Serpiente / Lagarto", "Elefante / Rinoceronte", "Oso / Gorila", "Jirafa / Camello", "Cocodrilo / Lagarto",
+    "Mono / Gorila", "Hámster / Ratón", "Abeja / Avispa", "Mariposa / Mariquita", "Hormiga / Cucaracha",
+    "Araña / Escorpión", "Águila / Halcón", "Vaca / Toro", "Cerdo / Jabalí", "Gallina / Pato", "Canguro / Koala",
+    "Medusa / Pulpo", "Caracol / Babosa", "Hipopótamo / Rinoceronte", "Flamenco / Cigüeña", "Mosquito / Mosca",
+    "Ballena / Orca", "Burro / Caballo", "Cucaracha / Hormiga", "Lagartija / Lagarto", "Ardilla / Ratón",
+    "Pez / Delfín", "Gusano / Serpiente", "Búho / Murciélago", "Cebra / Caballo", "Pavo / Gallina"
   ]},
 
   "Comida": { icono: "🍕", palabras: [
-    "Tortilla de patatas / Revuelto", "Paella / Arroz con pollo", "Croquetas / Empanadillas", "Jamón serrano / Chorizo",
-    "Gazpacho / Salmorejo", "Churros / Porras", "Empanada / Empanadilla", "Pulpo a la gallega / Calamares",
-    "Pizza / Focaccia", "Hamburguesa / Perrito caliente", "Tacos / Burrito", "Sushi / Ramen", "Ceviche / Tartar",
-    "Kebab / Shawarma", "Falafel / Hummus", "Canelones / Lasaña", "Lasaña / Macarrones", "Ramen / Sopa de fideos",
-    "Burrito / Fajitas", "Hot dog / Bocadillo", "Arepa / Cachapa", "Poke / Sushi", "Dumplings / Gyozas",
-    "Gyozas / Rollitos de primavera", "Baklava / Hojaldre", "Papas arrugadas / Papas fritas",
-    "Gofio / Harina", "Mojo picón / Ketchup", "Puchero canario / Cocido", "Huevos fritos / Tortilla francesa",
-    "Nuggets / Alitas", "Alitas de pollo / Costillas", "Macarrones / Espaguetis", "Espaguetis carbonara / Espaguetis boloñesa",
-    "Lentejas / Garbanzos", "Ensalada / Verduras", "Sándwich mixto / Tostada", "Patatas bravas / Patatas fritas",
-    "Nachos / Doritos", "Pan / Baguette", "Queso / Mantequilla", "Pollo asado / Pavo", "Filete / Chuleta",
-    "Salchichas / Chorizo", "Barraquito / Cortado", "Cereales / Galletas", "Palomitas / Patatas de bolsa",
-    "Crepe / Gofre", "Bocadillo de calamares / Bocadillo de tortilla", "Mejillones / Almejas"
+    "Pizza / Hamburguesa", "Hamburguesa / Perrito", "Tortilla / Revuelto", "Paella / Arroz", "Croquetas / Empanadillas",
+    "Jamón / Chorizo", "Churros / Porras", "Empanada / Empanadilla", "Tacos / Burrito", "Sushi / Ramen",
+    "Kebab / Shawarma", "Lasaña / Macarrones", "Macarrones / Espaguetis", "Espaguetis / Fideos", "Burrito / Fajitas",
+    "Perrito / Bocadillo", "Bocadillo / Sándwich", "Sándwich / Tostada", "Nuggets / Alitas", "Alitas / Costillas",
+    "Lentejas / Garbanzos", "Ensalada / Verduras", "Nachos / Doritos", "Pan / Tostada", "Queso / Mantequilla",
+    "Pollo / Pavo", "Filete / Chuleta", "Salchichas / Chorizo", "Cereales / Galletas", "Palomitas / Patatillas",
+    "Huevo / Tortilla", "Arroz / Paella", "Sopa / Caldo", "Papas fritas / Papas arrugadas", "Gofio / Harina",
+    "Puchero / Cocido", "Calamares / Pulpo", "Mejillones / Almejas", "Gambas / Langostinos", "Atún / Salmón",
+    "Salmón / Atún", "Yogur / Natillas", "Crepe / Gofre", "Mortadela / Salchichón", "Albóndigas / Hamburguesa",
+    "Pizza barbacoa / Pizza margarita", "Ketchup / Mayonesa", "Mayonesa / Mostaza", "Mojo / Ketchup"
+  ]},
+
+  "Frutas y verduras": { icono: "🍎", palabras: [
+    "Manzana / Pera", "Pera / Manzana", "Plátano / Mango", "Naranja / Mandarina", "Mandarina / Naranja", "Limón / Lima",
+    "Fresa / Frambuesa", "Sandía / Melón", "Melón / Sandía", "Uva / Cereza", "Cereza / Fresa", "Piña / Mango",
+    "Mango / Papaya", "Papaya / Mango", "Kiwi / Higo", "Higo / Ciruela", "Coco / Piña", "Melocotón / Albaricoque",
+    "Aguacate / Pepino", "Tomate / Pimiento", "Lechuga / Espinacas", "Zanahoria / Calabaza", "Patata / Batata",
+    "Cebolla / Ajo", "Ajo / Cebolla", "Pepino / Calabacín", "Calabacín / Berenjena", "Berenjena / Calabacín",
+    "Brócoli / Coliflor", "Coliflor / Brócoli", "Maíz / Guisantes", "Champiñón / Seta", "Calabaza / Zanahoria",
+    "Pimiento / Tomate", "Espinacas / Acelgas", "Batata / Patata"
   ]},
 
   "Bebidas": { icono: "🥤", palabras: [
-    "Coca-Cola / Pepsi", "Fanta / Trina", "Agua / Agua con gas", "Zumo de naranja / Zumo de piña",
-    "Batido de chocolate / Colacao", "Café / Té", "Monster / Red Bull", "Red Bull / Monster", "Aquarius / Powerade",
-    "Leche / Yogur líquido", "Colacao / Nesquik", "Limonada / Granizado", "Granizado / Slush", "Té helado / Nestea",
-    "Smoothie / Batido", "Chocolate caliente / Colacao", "Sprite / Seven Up", "Batido de fresa / Yogur",
-    "Horchata / Leche", "Clipper / Fanta"
+    "Coca-Cola / Pepsi", "Fanta / Trina", "Agua / Gaseosa", "Zumo / Batido", "Batido / Smoothie", "Café / Té", "Té / Café",
+    "Monster / Red Bull", "Red Bull / Monster", "Aquarius / Powerade", "Leche / Yogur", "Colacao / Nesquik",
+    "Limonada / Granizado", "Granizado / Limonada", "Nestea / Aquarius", "Sprite / Seven Up", "Horchata / Leche",
+    "Chocolate / Colacao", "Gaseosa / Sprite", "Clipper / Fanta", "Barraquito / Cortado", "Cortado / Café"
   ]},
 
   "Postres y dulces": { icono: "🍰", palabras: [
-    "Helado / Polo", "Tarta de queso / Tarta de chocolate", "Flan / Natillas", "Donut / Berlina", "Brownie / Bizcocho",
-    "Galletas Oreo / Galletas Príncipe", "Gominolas / Chuches", "Chupa Chups / Piruleta", "Chocolate / Nutella",
-    "Nutella / Crema de cacahuete", "Churros con chocolate / Porras", "Tiramisú / Tarta de café",
-    "Arroz con leche / Natillas", "Magdalena / Muffin", "Cruasán / Napolitana", "Napolitana de chocolate / Cruasán",
-    "Gofre / Tortitas", "Tortitas / Crepes", "Bienmesabe / Leche asada", "Kinder Bueno / Kit Kat",
-    "Kit Kat / Twix", "Algodón de azúcar / Gominolas", "Palmera de chocolate / Donut", "Turrón / Polvorón",
-    "Roscón de Reyes / Panettone", "Cupcake / Magdalena", "Muffin / Magdalena", "Macarons / Galletas"
+    "Helado / Polo", "Polo / Helado", "Tarta / Bizcocho", "Flan / Natillas", "Natillas / Flan", "Donut / Berlina",
+    "Brownie / Bizcocho", "Oreo / Galleta", "Gominolas / Chuches", "Piruleta / Chupachups", "Chocolate / Nutella",
+    "Nutella / Chocolate", "Tiramisú / Tarta", "Magdalena / Muffin", "Cruasán / Napolitana", "Napolitana / Cruasán",
+    "Gofre / Tortitas", "Tortitas / Gofre", "Kinder / Kit Kat", "Kit Kat / Twix", "Turrón / Polvorón",
+    "Roscón / Panettone", "Cupcake / Magdalena", "Palmera / Donut", "Chicle / Caramelo", "Caramelo / Chicle",
+    "Algodón de azúcar / Gominolas", "Bizcocho / Magdalena", "Galleta / Oreo"
   ]},
 
   "Videojuegos": { icono: "🎮", palabras: [
-    "Minecraft / Terraria", "Fortnite / Warzone", "Among Us / Fall Guys", "GTA V / Red Dead Redemption",
-    "Clash Royale / Clash of Clans", "Call of Duty / Battlefield", "Valorant / Counter Strike", "Roblox / Minecraft",
-    "FIFA / eFootball", "Brawl Stars / Clash Royale", "Apex Legends / Fortnite", "Fall Guys / Stumble Guys",
-    "Rocket League / FIFA", "PUBG / Free Fire", "The Sims / Animal Crossing", "League of Legends / Dota 2",
-    "Counter Strike / Valorant", "Overwatch / Valorant", "Stardew Valley / Animal Crossing", "Terraria / Minecraft",
-    "Hades / Dead Cells", "Genshin Impact / Zelda", "Mario Kart / Crash Team Racing", "Zelda / Elden Ring",
-    "Cyberpunk 2077 / GTA V", "NBA 2K / FIFA", "Juego Impostor / Among Us", "Pokémon / Digimon",
-    "Super Mario Bros / Sonic", "Sonic / Super Mario Bros", "Tetris / Candy Crush", "Candy Crush / Tetris",
-    "Subway Surfers / Temple Run", "Geometry Dash / Flappy Bird", "Pac-Man / Space Invaders", "Elden Ring / Dark Souls",
-    "God of War / Zelda", "The Last of Us / Resident Evil", "Resident Evil / The Last of Us", "Smash Bros / Mario Kart",
-    "Clash of Clans / Clash Royale", "Free Fire / PUBG", "Geoguessr / Google Maps", "Wii Sports / Just Dance",
-    "Five Nights at Freddy's / Poppy Playtime", "Hollow Knight / Celeste", "Pou / Tamagotchi", "Ajedrez / Damas"
+    "Minecraft / Roblox", "Fortnite / Warzone", "Among Us / Fall Guys", "GTA / Red Dead", "Clash Royale / Clash of Clans",
+    "Call of Duty / Battlefield", "Valorant / Counter Strike", "Roblox / Minecraft", "FIFA / eFootball", "Brawl Stars / Clash Royale",
+    "Fall Guys / Stumble Guys", "Rocket League / FIFA", "Free Fire / Fortnite", "Los Sims / Animal Crossing",
+    "League of Legends / Valorant", "Counter Strike / Valorant", "Mario Kart / Mario Bros", "Zelda / Mario",
+    "Pokémon / Digimon", "Mario Bros / Sonic", "Sonic / Mario Bros", "Tetris / Candy Crush", "Candy Crush / Tetris",
+    "Subway Surfers / Temple Run", "Geometry Dash / Flappy Bird", "Pac-Man / Tetris", "Clash of Clans / Clash Royale",
+    "Five Nights at Freddy's / Poppy Playtime", "Pou / Tamagotchi", "Ajedrez / Damas", "Just Dance / Wii Sports",
+    "Smash Bros / Mario Kart", "Warzone / Fortnite", "NBA 2K / FIFA", "Stumble Guys / Fall Guys", "Genshin Impact / Zelda"
   ]},
 
   "Marcas de coche": { icono: "🚗", palabras: [
     "BMW / Audi", "Audi / Mercedes", "Mercedes / BMW", "Seat / Cupra", "Volkswagen / Seat", "Ford / Opel",
-    "Renault / Peugeot", "Toyota / Honda", "Honda / Toyota", "Nissan / Mazda", "Peugeot / Citroën",
+    "Renault / Peugeot", "Toyota / Honda", "Honda / Toyota", "Nissan / Toyota", "Peugeot / Citroën",
     "Citroën / Peugeot", "Kia / Hyundai", "Hyundai / Kia", "Lamborghini / Ferrari", "Ferrari / Lamborghini",
-    "Porsche / Ferrari", "Tesla / BYD", "Fiat / Lancia", "Mini / Smart", "Volvo / Skoda", "Skoda / Volkswagen",
-    "Jeep / Land Rover", "Maserati / Alfa Romeo", "Alfa Romeo / Maserati", "Dacia / Renault", "Bugatti / McLaren",
-    "McLaren / Bugatti", "Opel / Ford", "Suzuki / Mitsubishi", "Land Rover / Jeep", "Cupra / Seat"
+    "Porsche / Ferrari", "Tesla / BYD", "Fiat / Seat", "Mini / Smart", "Jeep / Land Rover", "Dacia / Renault",
+    "Bugatti / Lamborghini", "Opel / Ford", "Cupra / Seat", "Suzuki / Toyota", "Volvo / Audi", "Skoda / Volkswagen"
   ]},
 
   "Marcas": { icono: "🏷️", palabras: [
-    "Nike / Adidas", "Adidas / Puma", "Puma / Reebok", "Zara / Pull&Bear", "Pull&Bear / Bershka", "Bershka / Stradivarius",
-    "Primark / Shein", "Shein / Temu", "Apple / Samsung", "Samsung / Xiaomi", "Xiaomi / Huawei", "Sony / Nintendo",
-    "Nintendo / Sony", "McDonald's / Burger King", "Burger King / KFC", "KFC / Popeyes", "Telepizza / Domino's",
-    "Domino's / Telepizza", "Starbucks / Costa Coffee", "Mercadona / Lidl", "Lidl / Aldi", "Hiperdino / Mercadona",
-    "Amazon / AliExpress", "IKEA / Leroy Merlin", "Coca-Cola / Pepsi", "Lego / Playmobil", "Vans / Converse",
-    "Converse / Vans", "The North Face / Columbia", "Decathlon / Sprinter", "Ray-Ban / Hawkers", "Gucci / Louis Vuitton",
-    "Louis Vuitton / Gucci", "Supreme / Off-White", "JD Sports / Foot Locker", "Media Markt / Worten"
+    "Nike / Adidas", "Adidas / Puma", "Puma / Nike", "Zara / Pull&Bear", "Pull&Bear / Bershka", "Bershka / Zara",
+    "Primark / Shein", "Shein / Temu", "Apple / Samsung", "Samsung / Xiaomi", "Xiaomi / Samsung", "Sony / Nintendo",
+    "Nintendo / Sony", "McDonald's / Burger King", "Burger King / KFC", "KFC / McDonald's", "Telepizza / Domino's",
+    "Domino's / Telepizza", "Starbucks / McDonald's", "Mercadona / Lidl", "Lidl / Aldi", "Hiperdino / Mercadona",
+    "Amazon / AliExpress", "IKEA / Leroy Merlin", "Lego / Playmobil", "Vans / Converse", "Converse / Vans",
+    "Decathlon / Sprinter", "Gucci / Louis Vuitton", "Louis Vuitton / Gucci", "JD Sports / Foot Locker", "Media Markt / Worten"
   ]},
 
   "Lugares Locales": { icono: "🏝️", palabras: [
@@ -147,175 +107,152 @@ const CATEGORIAS = {
     "Palm-Mar / Guaza", "Guaza / Palm-Mar", "Arona / Adeje", "Las Galletas / Costa del Silencio",
     "Parque La Reina / Cabo Blanco", "Buzanada / Chayofa", "Chayofa / Buzanada", "Cabo Blanco / Parque La Reina",
     "PH / Miraverde", "Miraverde / PH", "Aldea Blanca / Los Cardones", "Los Cardones / Aldea Blanca",
-    "Montaña Roja / Montaña Pelada", "Siam Park / Aqualand", "Aqualand / Siam Park", "Aeropuerto Tenerife Sur / Aeropuerto Tenerife Norte",
+    "Montaña Roja / Montaña Pelada", "Siam Park / Aqualand", "Aqualand / Siam Park", "Aeropuerto Sur / Aeropuerto Norte",
     "Siam Mall / Gran Sur", "Gran Sur / Siam Mall", "Loro Parque / Siam Park"
   ]},
 
   "Canarias": { icono: "🌋", palabras: [
     "Teide / Roque Nublo", "Tenerife / Gran Canaria", "Gran Canaria / Tenerife", "Lanzarote / Fuerteventura",
     "Fuerteventura / Lanzarote", "La Palma / La Gomera", "La Gomera / El Hierro", "El Hierro / La Gomera",
-    "La Graciosa / Lanzarote", "Santa Cruz / Las Palmas", "Las Palmas / Santa Cruz", "La Laguna / La Orotava",
-    "Puerto de la Cruz / Los Cristianos", "Carnaval / Romería", "Romería / Carnaval", "Guagua / Tranvía",
-    "Tranvía / Guagua", "Papas arrugadas / Papas con mojo", "Gofio / Millo", "Millo / Gofio", "Barraquito / Cortado leche y leche",
-    "Drago / Palmera", "Timple / Guitarra", "Lucha canaria / Juego del palo", "Guanche / Mencey",
-    "CD Tenerife / UD Las Palmas", "UD Las Palmas / CD Tenerife", "Lagartija / Perenquén", "Perenquén / Lagartija",
-    "Calima / Panza de burro", "Panza de burro / Calima", "Anaga / Teno", "Masca / Anaga", "Los Gigantes / Masca",
-    "Volcán / Montaña", "Fiestas del Cristo / Corpus", "Arepera / Guachinche", "Guachinche / Arepera",
-    "Mojo verde / Mojo rojo", "Chinijo / Pibe", "Ñoos / Fuerte", "Mi niño / Chacho"
+    "Santa Cruz / Las Palmas", "Las Palmas / Santa Cruz", "La Laguna / La Orotava", "Puerto de la Cruz / Los Cristianos",
+    "Carnaval / Romería", "Romería / Carnaval", "Guagua / Tranvía", "Tranvía / Guagua", "Papas arrugadas / Mojo",
+    "Mojo / Papas arrugadas", "Gofio / Millo", "Millo / Gofio", "Barraquito / Cortado", "Drago / Palmera",
+    "Timple / Guitarra", "Lucha canaria / Lucha libre", "Guanche / Vikingo", "CD Tenerife / UD Las Palmas",
+    "UD Las Palmas / CD Tenerife", "Lagartija / Perenquén", "Perenquén / Lagartija", "Calima / Niebla",
+    "Masca / Los Gigantes", "Los Gigantes / Masca", "Volcán / Montaña", "Guachinche / Arepera", "Arepera / Guachinche",
+    "Plátano / Tomate"
   ]},
 
   "Ciudades del mundo": { icono: "🏙️", palabras: [
     "Madrid / Barcelona", "Barcelona / Valencia", "Valencia / Barcelona", "Sevilla / Málaga", "Málaga / Sevilla",
     "Bilbao / San Sebastián", "Londres / Dublín", "París / Roma", "Roma / Milán", "Berlín / Múnich", "Nueva York / Chicago",
     "Los Ángeles / Las Vegas", "Las Vegas / Miami", "Miami / Los Ángeles", "Tokio / Seúl", "Seúl / Tokio",
-    "Lisboa / Oporto", "Ámsterdam / Bruselas", "Praga / Viena", "Viena / Budapest", "Dublín / Edimburgo",
-    "Oslo / Estocolmo", "Sídney / Melbourne", "Moscú / San Petersburgo", "Estocolmo / Copenhague",
-    "Buenos Aires / Montevideo", "Santiago de Chile / Lima", "Ciudad de México / Cancún", "Lima / Bogotá",
-    "Bogotá / Medellín", "Caracas / Bogotá", "La Habana / Santo Domingo", "Río de Janeiro / São Paulo",
-    "Dubái / Abu Dabi", "Estambul / El Cairo", "El Cairo / Marrakech", "Marrakech / Estambul", "Venecia / Florencia",
-    "Pekín / Shanghái", "Hong Kong / Singapur", "Atenas / Roma", "Mónaco / Montecarlo"
+    "Lisboa / Oporto", "Ámsterdam / Bruselas", "Praga / Viena", "Dublín / Londres", "Moscú / Kiev",
+    "Buenos Aires / Montevideo", "Ciudad de México / Cancún", "Bogotá / Medellín", "La Habana / Caracas",
+    "Río de Janeiro / São Paulo", "Dubái / Abu Dabi", "Estambul / El Cairo", "El Cairo / Marrakech", "Venecia / Florencia",
+    "Pekín / Shanghái", "Atenas / Roma", "Mónaco / Montecarlo"
   ]},
 
   "Países": { icono: "🌍", palabras: [
     "España / Portugal", "Portugal / España", "Francia / Italia", "Italia / Grecia", "Alemania / Austria",
-    "Reino Unido / Irlanda", "Estados Unidos / Canadá", "Canadá / Estados Unidos", "México / Colombia",
-    "Argentina / Uruguay", "Brasil / Argentina", "Colombia / Venezuela", "Venezuela / Colombia", "Cuba / República Dominicana",
-    "Japón / China", "China / Japón", "Corea del Sur / Japón", "India / Pakistán", "Australia / Nueva Zelanda",
-    "Egipto / Marruecos", "Marruecos / Argelia", "Rusia / Ucrania", "Suiza / Austria", "Países Bajos / Bélgica",
-    "Suecia / Noruega", "Noruega / Finlandia", "Grecia / Turquía", "Turquía / Grecia", "Chile / Perú",
-    "Perú / Bolivia", "Senegal / Nigeria", "Sudáfrica / Kenia", "Islandia / Groenlandia", "Tailandia / Vietnam",
-    "Arabia Saudí / Emiratos Árabes", "Jamaica / Cuba"
+    "Inglaterra / Irlanda", "Estados Unidos / Canadá", "Canadá / Estados Unidos", "México / Colombia",
+    "Argentina / Uruguay", "Brasil / Argentina", "Colombia / Venezuela", "Venezuela / Colombia", "Cuba / Jamaica",
+    "Japón / China", "China / Japón", "Corea del Sur / Japón", "India / China", "Australia / Nueva Zelanda",
+    "Egipto / Marruecos", "Marruecos / Egipto", "Rusia / Ucrania", "Suiza / Austria", "Holanda / Bélgica",
+    "Suecia / Noruega", "Noruega / Suecia", "Grecia / Turquía", "Turquía / Grecia", "Chile / Perú",
+    "Perú / Chile", "Sudáfrica / Kenia", "Islandia / Groenlandia", "Tailandia / Vietnam", "Jamaica / Cuba"
   ]},
 
   "Sitios": { icono: "📍", palabras: [
     "Playa / Piscina", "Piscina / Playa", "Hospital / Farmacia", "Colegio / Instituto", "Instituto / Universidad",
     "Biblioteca / Librería", "Cine / Teatro", "Teatro / Cine", "Supermercado / Centro comercial",
-    "Centro comercial / Supermercado", "Gimnasio / Polideportivo", "Aeropuerto / Estación de tren",
-    "Estación de guaguas / Aeropuerto", "Restaurante / Bar", "Discoteca / Bar", "Parque / Jardín", "Zoo / Acuario",
-    "Acuario / Zoo", "Museo / Galería de arte", "Iglesia / Catedral", "Comisaría / Juzgado", "Banco / Cajero",
-    "Gasolinera / Taller", "Peluquería / Barbería", "Barbería / Peluquería", "Hotel / Apartamento", "Camping / Albergue",
-    "Montaña / Volcán", "Desierto / Playa", "Selva / Bosque", "Bosque / Selva", "Cementerio / Iglesia",
-    "Parque de atracciones / Parque acuático", "Parque acuático / Parque de atracciones", "Estadio / Pabellón",
-    "Cárcel / Comisaría", "Castillo / Palacio", "Isla / Península", "Cueva / Túnel", "Faro / Puerto", "Puerto / Muelle",
-    "Lavandería / Tintorería", "Bolera / Recreativos", "Karting / Circuito", "Escape room / Laser tag"
+    "Gimnasio / Polideportivo", "Aeropuerto / Estación", "Estación / Aeropuerto", "Restaurante / Bar", "Discoteca / Bar",
+    "Parque / Jardín", "Zoo / Acuario", "Acuario / Zoo", "Museo / Biblioteca", "Iglesia / Catedral", "Comisaría / Cárcel",
+    "Banco / Cajero", "Gasolinera / Taller", "Peluquería / Barbería", "Barbería / Peluquería", "Hotel / Apartamento",
+    "Camping / Albergue", "Montaña / Volcán", "Desierto / Playa", "Selva / Bosque", "Bosque / Selva", "Cementerio / Iglesia",
+    "Feria / Parque de atracciones", "Estadio / Pabellón", "Cárcel / Comisaría", "Castillo / Palacio", "Isla / Playa",
+    "Cueva / Túnel", "Faro / Puerto", "Puerto / Muelle", "Bolera / Recreativos", "Karting / Circuito", "Escape room / Laser tag"
   ]},
 
   "Objetos": { icono: "🧰", palabras: [
     "Móvil / Tablet", "Bolígrafo / Lápiz", "Mochila / Bolso", "Reloj / Pulsera", "Silla / Taburete", "Mesa / Escritorio",
-    "Cargador / Cable USB", "Camiseta / Sudadera", "Altavoz / Auriculares", "Botella / Vaso", "Gafas / Lentillas",
-    "Cepillo de dientes / Peine", "Cojín / Almohada", "Cuchara / Tenedor", "Taza / Vaso", "Auriculares / Cascos",
-    "Ratón / Teclado", "Teclado / Piano", "Zapato / Zapatilla", "Libro / Revista", "Linterna / Vela",
-    "Calculadora / Regla", "Cartera / Monedero", "Llave / Candado", "Mando de la tele / Mando de la consola",
-    "Paraguas / Chubasquero", "Espejo / Ventana", "Toalla / Sábana", "Peine / Cepillo", "Tijeras / Cúter",
-    "Vela / Mechero", "Mechero / Cerillas", "Martillo / Mazo", "Escoba / Fregona", "Fregona / Escoba",
-    "Nevera / Congelador", "Microondas / Horno", "Lavadora / Lavavajillas", "Secador / Plancha", "Cama / Sofá",
-    "Sofá / Sillón", "Lámpara / Bombilla", "Alfombra / Felpudo", "Cortina / Persiana", "Grifo / Ducha",
-    "Balón / Pelota de tenis", "Patinete / Bicicleta", "Monopatín / Patinete", "Globo / Pompa de jabón",
-    "Dado / Ficha", "Brújula / Mapa", "Imán / Clip", "Pegamento / Celo", "Celo / Pegamento"
+    "Cargador / Cable", "Altavoz / Auriculares", "Botella / Vaso", "Gafas / Lentillas", "Almohada / Cojín", "Cuchara / Tenedor",
+    "Tenedor / Cuchillo", "Taza / Vaso", "Auriculares / Cascos", "Ratón / Teclado", "Zapato / Zapatilla", "Libro / Revista",
+    "Linterna / Vela", "Calculadora / Regla", "Cartera / Monedero", "Llave / Candado", "Mando / Teclado",
+    "Paraguas / Chubasquero", "Espejo / Ventana", "Toalla / Sábana", "Peine / Cepillo", "Tijeras / Cúter", "Vela / Mechero",
+    "Mechero / Cerillas", "Escoba / Fregona", "Fregona / Escoba", "Nevera / Congelador", "Microondas / Horno",
+    "Lavadora / Lavavajillas", "Secador / Plancha", "Cama / Sofá", "Sofá / Sillón", "Lámpara / Bombilla",
+    "Alfombra / Felpudo", "Cortina / Persiana", "Ducha / Bañera", "Balón / Pelota", "Patinete / Bicicleta", "Globo / Pompa",
+    "Dado / Ficha", "Mapa / Brújula", "Pegamento / Celo", "Celo / Pegamento", "Goma / Típex"
   ]},
 
   "Tecnología": { icono: "💻", palabras: [
-    "Ordenador / Portátil", "Tablet / Móvil", "Smartphone / Tablet", "Router / Módem", "Cámara / Webcam",
-    "Televisor / Monitor", "Impresora / Escáner", "Disco duro / Pendrive", "SSD / Disco duro", "Procesador / Tarjeta gráfica",
-    "Tarjeta gráfica / Procesador", "Micrófono / Altavoz", "Dron / Helicóptero de juguete", "Smartwatch / Pulsera de actividad",
-    "Consola / Ordenador", "Placa base / Procesador", "Monitor / Televisor", "PlayStation / Xbox", "Xbox / PlayStation",
-    "Nintendo Switch / Steam Deck", "AirPods / Auriculares", "Wifi / Bluetooth", "Bluetooth / Wifi", "Pendrive / Tarjeta SD",
-    "Robot / Inteligencia artificial", "Inteligencia artificial / Robot", "Realidad virtual / Realidad aumentada",
-    "Gafas VR / Gafas 3D", "Power bank / Cargador", "Mando / Joystick", "Teclado mecánico / Teclado de membrana",
-    "Alexa / Siri", "Siri / Google Assistant", "Proyector / Televisor", "Calculadora científica / Calculadora",
-    "Patinete eléctrico / Bici eléctrica", "Coche eléctrico / Coche híbrido", "Criptomoneda / Bitcoin", "Contraseña / PIN",
-    "Virus informático / Hacker", "Código QR / Código de barras", "Captura de pantalla / Grabación de pantalla"
+    "Ordenador / Portátil", "Portátil / Tablet", "Tablet / Móvil", "Router / Wifi", "Cámara / Webcam",
+    "Televisión / Monitor", "Impresora / Escáner", "Pendrive / Disco duro", "Micrófono / Altavoz", "Dron / Helicóptero",
+    "Smartwatch / Pulsera", "Consola / Ordenador", "Monitor / Televisión", "PlayStation / Xbox", "Xbox / PlayStation",
+    "Nintendo Switch / PlayStation", "AirPods / Auriculares", "Wifi / Bluetooth", "Bluetooth / Wifi", "Robot / Inteligencia artificial",
+    "Gafas VR / Gafas 3D", "Powerbank / Cargador", "Mando / Joystick", "Alexa / Siri", "Siri / Alexa", "Proyector / Televisión",
+    "Bitcoin / Dinero", "Contraseña / PIN", "Virus / Hacker", "Código QR / Código de barras", "Captura / Foto", "Emoji / Sticker"
   ]},
 
   "Apps y redes": { icono: "📱", palabras: [
-    "Instagram / TikTok", "TikTok / Instagram Reels", "WhatsApp / Telegram", "Telegram / WhatsApp", "YouTube / Twitch",
-    "Twitch / YouTube", "Snapchat / Instagram", "Twitter / Threads", "Facebook / Instagram", "Spotify / Apple Music",
-    "Netflix / HBO", "HBO / Disney+", "Disney+ / Netflix", "Amazon Prime / Netflix", "Discord / Slack",
-    "Google Maps / Waze", "Uber / Cabify", "Glovo / Uber Eats", "Uber Eats / Just Eat", "Wallapop / Vinted",
-    "Vinted / Wallapop", "BeReal / Snapchat", "Pinterest / Tumblr", "Duolingo / Babbel", "ChatGPT / Claude",
-    "Claude / ChatGPT", "Shazam / Spotify", "Tinder / Bumble", "Google Drive / Dropbox", "Gmail / Outlook",
-    "Bizum / PayPal", "PayPal / Bizum", "Reddit / Twitter", "Kick / Twitch", "CapCut / InShot", "Canva / Photoshop",
-    "Google Classroom / Moodle", "Zoom / Google Meet", "Steam / Epic Games", "Epic Games / Steam"
+    "Instagram / TikTok", "TikTok / Instagram", "WhatsApp / Telegram", "Telegram / WhatsApp", "YouTube / Twitch",
+    "Twitch / YouTube", "Snapchat / Instagram", "Twitter / Facebook", "Facebook / Twitter", "Spotify / YouTube",
+    "Netflix / HBO", "HBO / Disney+", "Disney+ / Netflix", "Amazon Prime / Netflix", "Discord / WhatsApp",
+    "Google Maps / GPS", "Uber / Taxi", "Glovo / Uber Eats", "Uber Eats / Glovo", "Wallapop / Vinted", "Vinted / Wallapop",
+    "BeReal / Snapchat", "Pinterest / Instagram", "Duolingo / Google Traductor", "ChatGPT / Google", "Google / ChatGPT",
+    "Shazam / Spotify", "Gmail / WhatsApp", "Bizum / PayPal", "PayPal / Bizum", "CapCut / TikTok", "Canva / Photoshop",
+    "Google Classroom / Gmail", "Zoom / Google Meet", "Steam / Epic Games", "Kick / Twitch"
   ]},
 
   "Películas": { icono: "🎬", palabras: [
-    "El Padrino / Scarface", "Titanic / Pearl Harbor", "Avatar / Pandora", "Interestelar / Gravity", "Parásitos / Joker",
-    "Inception / Matrix", "Gladiator / Troya", "Matrix / Inception", "Los Vengadores / Liga de la Justicia",
-    "Toy Story / Cars", "Jurassic Park / King Kong", "Harry Potter / Las Crónicas de Narnia",
-    "El Señor de los Anillos / El Hobbit", "La La Land / Grease", "Coco / Encanto", "Forrest Gump / Big Fish",
-    "Regreso al Futuro / Terminator", "Joker / Batman", "Mad Max / Fast & Furious", "El Gran Hotel Budapest / Amélie",
-    "Shrek / Madagascar", "Madagascar / Kung Fu Panda", "El Rey León / Tarzán", "Frozen / Enredados", "Buscando a Nemo / Tiburón",
-    "Up / Wall-E", "Los Increíbles / Los Vengadores", "Gru, mi villano favorito / Los Minions", "Star Wars / Star Trek",
+    "Titanic / Avatar", "Avatar / Titanic", "Matrix / Inception", "Inception / Matrix", "Gladiator / Troya",
+    "Los Vengadores / Spider-Man", "Toy Story / Cars", "Cars / Toy Story", "Jurassic Park / King Kong", "King Kong / Godzilla",
+    "Harry Potter / Narnia", "El Señor de los Anillos / Harry Potter", "Coco / Encanto", "Encanto / Coco", "Forrest Gump / Titanic",
+    "Regreso al Futuro / Terminator", "Joker / Batman", "Shrek / Madagascar", "Madagascar / Kung Fu Panda",
+    "Kung Fu Panda / Madagascar", "El Rey León / Tarzán", "Frozen / Enredados", "Enredados / Frozen", "Buscando a Nemo / Tiburón",
+    "Up / Wall-E", "Los Increíbles / Los Vengadores", "Gru / Los Minions", "Los Minions / Gru", "Star Wars / Star Trek",
     "Piratas del Caribe / Indiana Jones", "Indiana Jones / Piratas del Caribe", "Spider-Man / Batman", "Batman / Superman",
-    "Iron Man / Spider-Man", "Fast & Furious / Need for Speed", "Tiburón / Megalodón",
-    "It / Annabelle", "El Exorcista / Expediente Warren", "Barbie / Oppenheimer", "Oppenheimer / Barbie",
-    "Top Gun / Fast & Furious", "Rocky / Creed", "Solo en casa / Mrs. Doubtfire", "Ratatouille / Chef",
-    "Monstruos S.A. / Monster House", "Del Revés / Soul", "Super Mario Bros: La película / Sonic: La película",
-    "Spider-Man: Cruzando el Multiverso / Spider-Man: Un nuevo universo", "Dune / Star Wars"
+    "Iron Man / Spider-Man", "Fast & Furious / Cars", "Tiburón / Megalodón", "It / Annabelle", "Annabelle / It",
+    "Barbie / Oppenheimer", "Top Gun / Fast & Furious", "Rocky / Creed", "Solo en casa / Mr. Bean",
+    "Ratatouille / Chef", "Monstruos S.A. / Monster House", "Del Revés / Coco", "Mario Bros / Sonic", "Sonic / Mario Bros",
+    "Dune / Star Wars", "Interstellar / Gravity"
   ]},
 
   "Series": { icono: "📺", palabras: [
-    "Breaking Bad / Better Call Saul", "Stranger Things / Dark", "The Crown / Downton Abbey", "Juego de Tronos / La Casa del Dragón",
-    "The Mandalorian / Star Wars", "Friends / How I Met Your Mother", "The Office / Brooklyn 99", "Black Mirror / Love, Death & Robots",
-    "Narcos / El Chapo", "Peaky Blinders / Boardwalk Empire", "Rick y Morty / Futurama", "Los Simpsons / Padre de familia",
-    "Fargo / True Detective", "Dexter / Mindhunter", "The Witcher / Juego de Tronos", "Chernobyl / The Last of Us",
-    "Mindhunter / Dexter", "Ozark / Breaking Bad", "Sherlock / Doctor House", "How I Met Your Mother / Friends",
-    "La Casa de Papel / Élite", "Élite / Física o Química", "El juego del calamar / Alice in Borderland",
-    "Wednesday / Stranger Things", "The Boys / Invincible", "Invincible / The Boys", "Bob Esponja / Hora de Aventuras",
-    "Pokémon / Digimon", "One Piece / Naruto", "Naruto / Dragon Ball", "Dragon Ball / Naruto", "Ataque a los Titanes / Demon Slayer",
-    "Demon Slayer / Jujutsu Kaisen", "Death Note / Code Geass", "Aquí no hay quien viva / La que se avecina",
-    "La que se avecina / Aquí no hay quien viva", "Los Serrano / Médico de familia", "Vis a vis / Prison Break",
-    "Prison Break / Vis a vis", "The Walking Dead / The Last of Us", "Gran Hermano / La isla de las tentaciones",
+    "Breaking Bad / Narcos", "Narcos / Breaking Bad", "Stranger Things / Miércoles", "Miércoles / Stranger Things",
+    "Juego de Tronos / The Witcher", "The Witcher / Juego de Tronos", "Friends / Cómo conocí a vuestra madre",
+    "Cómo conocí a vuestra madre / Friends", "The Office / Friends", "Black Mirror / Stranger Things", "Peaky Blinders / Narcos",
+    "Rick y Morty / Los Simpson", "Los Simpson / Padre de familia", "Padre de familia / Los Simpson", "La Casa de Papel / Élite",
+    "Élite / La Casa de Papel", "El juego del calamar / Alice in Borderland", "The Boys / Invincible", "Invincible / The Boys",
+    "Bob Esponja / Hora de Aventuras", "One Piece / Naruto", "Naruto / Dragon Ball", "Dragon Ball / Naruto",
+    "Ataque a los Titanes / Demon Slayer", "Demon Slayer / Ataque a los Titanes", "Death Note / Naruto",
+    "Aquí no hay quien viva / La que se avecina", "La que se avecina / Aquí no hay quien viva", "Prison Break / Vis a vis",
+    "The Walking Dead / The Last of Us", "The Last of Us / The Walking Dead", "Gran Hermano / La isla de las tentaciones",
     "La isla de las tentaciones / Gran Hermano", "Pasapalabra / Saber y Ganar", "MasterChef / Pesadilla en la cocina",
-    "Lost / The 100", "Grey's Anatomy / Doctor House", "Euphoria / Élite"
+    "Doctor House / Anatomía de Grey", "Euphoria / Élite", "Sherlock / Doctor House", "Dexter / Breaking Bad"
   ]},
 
   "Dibujos y personajes": { icono: "🦸", palabras: [
-    "Bob Esponja / Patricio", "Patricio / Calamardo", "Mickey Mouse / Minnie Mouse", "Pato Donald / Goofy", "Shrek / Fiona",
-    "Pikachu / Charmander", "Charmander / Squirtle", "Mario / Luigi", "Luigi / Wario", "Sonic / Knuckles", "Kirby / Yoshi",
+    "Bob Esponja / Patricio", "Patricio / Calamardo", "Mickey Mouse / Minnie", "Pato Donald / Goofy", "Shrek / Fiona",
+    "Pikachu / Charmander", "Charmander / Squirtle", "Mario / Luigi", "Luigi / Mario", "Sonic / Mario", "Kirby / Yoshi",
     "Spider-Man / Venom", "Batman / Joker", "Superman / Flash", "Iron Man / Capitán América", "Hulk / Thor",
-    "Thor / Loki", "Thanos / Darth Vader", "Darth Vader / Kylo Ren", "Yoda / Grogu", "Harry Potter / Ron Weasley",
+    "Thor / Loki", "Thanos / Darth Vader", "Darth Vader / Thanos", "Yoda / Grogu", "Harry Potter / Ron",
     "Hermione / Ginny", "Voldemort / Darth Vader", "Gandalf / Dumbledore", "Dumbledore / Gandalf", "Gollum / Dobby",
     "Homer Simpson / Peter Griffin", "Bart Simpson / Stewie", "Goku / Vegeta", "Vegeta / Goku", "Naruto / Sasuke",
     "Luffy / Zoro", "Elsa / Anna", "Buzz Lightyear / Woody", "Woody / Buzz Lightyear", "Rayo McQueen / Mate",
-    "Nemo / Dory", "Simba / Mufasa", "Stitch / Lilo", "Minion / Gru", "Gru / Minion", "Mr. Bean / Chaplin",
-    "Pocoyó / Peppa Pig", "Peppa Pig / George", "Doraemon / Shin Chan", "Shin Chan / Doraemon", "Scooby-Doo / Shaggy",
-    "Tom / Jerry", "Bugs Bunny / Pato Lucas", "Steve (Minecraft) / Alex (Minecraft)", "Creeper / Zombie",
-    "Link / Zelda", "Kratos / Atreus", "Lara Croft / Indiana Jones", "Chucky / Annabelle", "Wednesday Addams / Merlina"
+    "Nemo / Dory", "Simba / Mufasa", "Stitch / Lilo", "Minion / Gru", "Mr. Bean / Chaplin", "Pocoyó / Peppa Pig",
+    "Peppa Pig / Pocoyó", "Doraemon / Shin Chan", "Shin Chan / Doraemon", "Scooby-Doo / Shaggy", "Tom / Jerry",
+    "Bugs Bunny / Pato Lucas", "Steve / Creeper", "Creeper / Zombi", "Chucky / Annabelle", "Miércoles / Morticia"
   ]},
 
   "Música": { icono: "🎵", palabras: [
-    "Pop / Indie", "Rock / Metal", "Jazz / Blues", "Rap / Trap", "Reguetón / Dembow", "Electrónica / Techno",
-    "Clásica / Ópera", "Blues / Soul", "Country / Folk", "Indie / Pop", "Funk / Disco", "Soul / R&B",
-    "Salsa / Bachata", "Bachata / Merengue", "Merengue / Salsa", "K-Pop / J-Pop", "Metal / Rock", "Trap / Drill",
-    "House / Techno", "Techno / House", "Flamenco / Rumba", "Drill / Trap", "Dembow / Reguetón", "Cumbia / Salsa",
-    "Punk / Rock", "Ópera / Clásica", "Reggae / Ska", "Corrido / Ranchera", "Gospel / Soul", "Lo-fi / Chill"
+    "Pop / Rock", "Rock / Metal", "Rap / Trap", "Trap / Rap", "Reguetón / Dembow", "Electrónica / Techno",
+    "Clásica / Ópera", "Salsa / Bachata", "Bachata / Merengue", "Merengue / Salsa", "K-Pop / Pop", "Metal / Rock",
+    "House / Techno", "Techno / House", "Flamenco / Rumba", "Rumba / Flamenco", "Dembow / Reguetón", "Cumbia / Salsa",
+    "Punk / Rock", "Ópera / Clásica", "Reggae / Reguetón", "Jazz / Blues", "Karaoke / Concierto", "Villancico / Canción"
   ]},
 
   "Cantantes y artistas": { icono: "🎤", palabras: [
-    "Bad Bunny / J Balvin", "J Balvin / Maluma", "Maluma / J Balvin", "Rosalía / Aitana", "Aitana / Lola Indigo",
+    "Bad Bunny / J Balvin", "J Balvin / Maluma", "Maluma / J Balvin", "Rosalía / Aitana", "Aitana / Rosalía",
     "Quevedo / Bizarrap", "Bizarrap / Quevedo", "Shakira / Karol G", "Karol G / Shakira", "Taylor Swift / Billie Eilish",
-    "Billie Eilish / Olivia Rodrigo", "Ed Sheeran / Justin Bieber", "Justin Bieber / Ed Sheeran", "Drake / Kanye West",
-    "Kanye West / Travis Scott", "Travis Scott / Drake", "Eminem / 50 Cent", "Michael Jackson / Prince",
-    "Daddy Yankee / Don Omar", "Don Omar / Daddy Yankee", "Anuel AA / Ozuna", "Ozuna / Anuel AA", "Feid / Ryan Castro",
-    "Myke Towers / Rauw Alejandro", "Rauw Alejandro / Myke Towers", "Peso Pluma / Natanael Cano", "C. Tangana / Rosalía",
-    "Morad / Beny Jr", "Beny Jr / Morad", "Duki / Bizarrap", "Trueno / Duki", "Rels B / Juan Magán", "Dani Fernández / Pablo Alborán",
+    "Billie Eilish / Taylor Swift", "Ed Sheeran / Justin Bieber", "Justin Bieber / Ed Sheeran", "Drake / Travis Scott",
+    "Travis Scott / Drake", "Eminem / 50 Cent", "Michael Jackson / Elvis", "Daddy Yankee / Don Omar", "Don Omar / Daddy Yankee",
+    "Anuel / Ozuna", "Ozuna / Anuel", "Feid / Karol G", "Myke Towers / Rauw Alejandro", "Rauw Alejandro / Myke Towers",
+    "Peso Pluma / Bad Bunny", "C. Tangana / Rosalía", "Morad / Beny Jr", "Duki / Bizarrap", "Rels B / Morad",
     "Pablo Alborán / Alejandro Sanz", "Alejandro Sanz / Pablo Alborán", "Melendi / Estopa", "Estopa / Melendi",
-    "Queen / The Beatles", "The Beatles / The Rolling Stones", "Coldplay / Imagine Dragons", "Imagine Dragons / Coldplay",
-    "BTS / Blackpink", "Blackpink / BTS", "Dua Lipa / Rihanna", "Rihanna / Beyoncé", "The Weeknd / Bruno Mars",
-    "Bruno Mars / The Weeknd", "Jhayco / Myke Towers", "Saiko / Quevedo", "Daviles de Novelda / Melendi"
+    "Queen / The Beatles", "The Beatles / Queen", "Coldplay / Imagine Dragons", "Imagine Dragons / Coldplay",
+    "BTS / Blackpink", "Blackpink / BTS", "Dua Lipa / Rihanna", "Rihanna / Beyoncé", "The Weeknd / Bruno Mars", "Bruno Mars / The Weeknd"
   ]},
 
   "Fútbol: equipos": { icono: "⚽", palabras: [
-    "Real Madrid / Barcelona", "Barcelona / Real Madrid", "Atlético de Madrid / Real Madrid", "Sevilla / Betis",
-    "Betis / Sevilla", "Valencia / Villarreal", "Villarreal / Valencia", "Athletic Club / Real Sociedad",
-    "Real Sociedad / Athletic Club", "CD Tenerife / UD Las Palmas", "UD Las Palmas / CD Tenerife", "Girona / Espanyol",
+    "Real Madrid / Barça", "Barça / Real Madrid", "Atlético de Madrid / Real Madrid", "Sevilla / Betis",
+    "Betis / Sevilla", "Valencia / Villarreal", "Villarreal / Valencia", "Athletic / Real Sociedad",
+    "Real Sociedad / Athletic", "CD Tenerife / UD Las Palmas", "UD Las Palmas / CD Tenerife",
     "Manchester United / Manchester City", "Manchester City / Manchester United", "Liverpool / Chelsea", "Chelsea / Arsenal",
-    "Arsenal / Tottenham", "PSG / Olympique de Marsella", "Bayern de Múnich / Borussia Dortmund",
-    "Borussia Dortmund / Bayern de Múnich", "Juventus / Inter de Milán", "Inter de Milán / AC Milan", "AC Milan / Inter de Milán",
-    "Boca Juniors / River Plate", "River Plate / Boca Juniors", "Inter Miami / LA Galaxy", "Al Nassr / Al Hilal",
-    "Napoli / Roma", "Ajax / PSV", "Benfica / Oporto", "Selección Española / Selección Portuguesa",
-    "Selección Argentina / Selección Brasileña"
+    "Arsenal / Chelsea", "PSG / Bayern", "Bayern / Dortmund", "Dortmund / Bayern", "Juventus / Inter", "Inter / Milan",
+    "Milan / Inter", "Boca Juniors / River Plate", "River Plate / Boca Juniors", "Inter Miami / LA Galaxy",
+    "Al Nassr / Al Hilal", "Selección Española / Selección Portuguesa", "Argentina / Brasil"
   ]},
 
   "Futbolistas": { icono: "🥅", palabras: [
@@ -323,139 +260,132 @@ const CATEGORIAS = {
     "Lewandowski / Haaland", "Lamine Yamal / Nico Williams", "Nico Williams / Lamine Yamal", "Pedri / Gavi", "Gavi / Pedri",
     "Bellingham / Valverde", "Valverde / Bellingham", "Neymar / Ronaldinho", "Ronaldinho / Neymar", "Modrić / Kroos",
     "Kroos / Modrić", "Sergio Ramos / Piqué", "Piqué / Sergio Ramos", "Iniesta / Xavi", "Xavi / Iniesta", "Casillas / Courtois",
-    "Courtois / Ter Stegen", "Ter Stegen / Courtois", "Griezmann / Benzema", "Benzema / Griezmann", "Salah / Mané",
-    "Kane / Lewandowski", "Pedro (futbolista) / Fernando Torres", "Fernando Torres / David Villa", "Zidane / Ronaldo Nazário",
-    "Ronaldo Nazário / Zidane", "Maradona / Pelé", "Pelé / Maradona", "Ibrahimović / Cristiano Ronaldo", "Rodri / Busquets",
-    "Busquets / Rodri", "Raphinha / Vinícius", "Kylian Mbappé / Erling Haaland", "Dani Carvajal / Jordi Alba",
-    "Endrick / Arda Güler", "Saka / Foden", "De Bruyne / Modrić"
+    "Courtois / Casillas", "Griezmann / Benzema", "Benzema / Griezmann", "Salah / Mané", "Kane / Haaland",
+    "Fernando Torres / David Villa", "Zidane / Ronaldo Nazário", "Maradona / Pelé", "Pelé / Maradona",
+    "Ibrahimović / Cristiano Ronaldo", "Rodri / Busquets", "Busquets / Rodri", "Raphinha / Vinícius", "Carvajal / Jordi Alba"
   ]},
 
   "Deportes": { icono: "🏅", palabras: [
-    "Fútbol / Fútbol sala", "Fútbol sala / Fútbol", "Baloncesto / Balonmano", "Balonmano / Waterpolo", "Tenis / Pádel",
+    "Fútbol / Fútbol sala", "Fútbol sala / Fútbol", "Baloncesto / Balonmano", "Balonmano / Baloncesto", "Tenis / Pádel",
     "Pádel / Tenis", "Natación / Waterpolo", "Surf / Bodyboard", "Bodyboard / Surf", "Kitesurf / Windsurf",
-    "Windsurf / Kitesurf", "Skate / Patinaje", "Ciclismo / Mountain bike", "Atletismo / Running", "Boxeo / Kickboxing",
-    "Kárate / Taekwondo", "Judo / Lucha libre", "Golf / Minigolf", "Voleibol / Vóley playa", "Rugby / Fútbol americano",
+    "Windsurf / Kitesurf", "Skate / Patinaje", "Ciclismo / Running", "Atletismo / Running", "Boxeo / Kickboxing",
+    "Kárate / Taekwondo", "Judo / Kárate", "Golf / Minigolf", "Voleibol / Vóley playa", "Rugby / Fútbol americano",
     "Fútbol americano / Rugby", "Béisbol / Críquet", "Esquí / Snowboard", "Snowboard / Esquí", "Escalada / Senderismo",
-    "Senderismo / Escalada", "Fórmula 1 / MotoGP", "MotoGP / Fórmula 1", "Gimnasia / Danza", "Crossfit / Gimnasio",
-    "Hockey / Hockey sobre hielo", "Ping pong / Bádminton", "Bádminton / Ping pong", "Esgrima / Kendo", "Parkour / Escalada",
-    "Buceo / Snorkel", "Snorkel / Buceo", "Lucha canaria / Lucha libre", "UFC / Boxeo", "Calistenia / Crossfit", "Ajedrez / Damas"
+    "Senderismo / Escalada", "Fórmula 1 / MotoGP", "MotoGP / Fórmula 1", "Gimnasia / Baile", "Crossfit / Gimnasio",
+    "Hockey / Patinaje", "Ping pong / Bádminton", "Bádminton / Ping pong", "Parkour / Escalada", "Buceo / Snorkel",
+    "Snorkel / Buceo", "Lucha canaria / Lucha libre", "UFC / Boxeo", "Calistenia / Crossfit"
   ]},
 
   "Profesiones": { icono: "👷", palabras: [
     "Médico / Enfermero", "Profesor / Director", "Ingeniero / Arquitecto", "Abogado / Juez", "Enfermero / Médico",
     "Carpintero / Albañil", "Panadero / Pastelero", "Peluquero / Barbero", "Policía / Guardia Civil", "Bombero / Socorrista",
-    "Electricista / Fontanero", "Programador / Informático", "Diseñador / Pintor", "Arquitecto / Ingeniero",
-    "Periodista / Presentador", "Cocinero / Camarero", "Mecánico / Electricista", "Dentista / Médico", "Veterinario / Médico",
+    "Electricista / Fontanero", "Programador / Informático", "Arquitecto / Ingeniero", "Periodista / Presentador",
+    "Cocinero / Camarero", "Camarero / Cocinero", "Mecánico / Electricista", "Dentista / Médico", "Veterinario / Médico",
     "Agricultor / Ganadero", "Piloto / Azafato", "Azafato / Piloto", "Astronauta / Piloto", "Youtuber / Streamer",
     "Streamer / Youtuber", "Futbolista / Entrenador", "Entrenador / Árbitro", "Árbitro / Juez", "Socorrista / Bombero",
-    "Fontanero / Electricista", "Cajero / Dependiente", "Dependiente / Cajero", "Taxista / Conductor de guagua",
-    "Conductor de guagua / Taxista", "Cartero / Repartidor", "Repartidor / Cartero", "Actor / Cantante", "Cantante / Actor",
-    "Fotógrafo / Cámara", "Psicólogo / Psiquiatra", "Farmacéutico / Médico", "Militar / Policía", "Detective / Policía",
-    "Científico / Investigador", "Influencer / Youtuber", "Jardinero / Agricultor", "Pescador / Marinero", "Surfista / Socorrista"
+    "Fontanero / Electricista", "Cajero / Dependiente", "Dependiente / Cajero", "Taxista / Guagüero", "Guagüero / Taxista",
+    "Cartero / Repartidor", "Repartidor / Cartero", "Actor / Cantante", "Cantante / Actor", "Fotógrafo / Periodista",
+    "Psicólogo / Médico", "Farmacéutico / Médico", "Militar / Policía", "Detective / Policía", "Científico / Médico",
+    "Influencer / Youtuber", "Jardinero / Agricultor", "Pescador / Marinero", "Payaso / Mago", "Mago / Payaso"
   ]},
 
-  "Ciencia": { icono: "🔬", palabras: [
-    "Física / Química", "Química / Física", "Biología / Medicina", "Astronomía / Astrología", "Geología / Vulcanología",
-    "Botánica / Biología", "Zoología / Veterinaria", "Ecología / Medio ambiente", "Genética / ADN", "Meteorología / Clima",
-    "Neurociencia / Psicología", "Matemáticas / Física", "Robótica / Informática", "Nanotecnología / Robótica",
-    "Microbiología / Virología", "Psicología / Filosofía", "Oceanografía / Biología marina", "Paleontología / Arqueología",
-    "Farmacología / Química", "Ingeniería genética / Clonación", "Átomo / Molécula", "Molécula / Átomo", "Célula / Bacteria",
-    "Bacteria / Virus", "Virus / Bacteria", "ADN / Gen", "Gravedad / Magnetismo", "Agujero negro / Estrella",
-    "Planeta / Estrella", "Galaxia / Universo", "Luna / Sol", "Sol / Estrella", "Volcán / Terremoto", "Terremoto / Tsunami",
-    "Fotosíntesis / Respiración", "Electricidad / Magnetismo", "Microscopio / Telescopio", "Telescopio / Microscopio",
-    "Dinosaurio / Fósil", "Evolución / Selección natural", "Tabla periódica / Elemento químico", "Laboratorio / Experimento"
+  "Espacio y ciencia": { icono: "🔬", palabras: [
+    "Sol / Luna", "Luna / Sol", "Estrella / Planeta", "Planeta / Estrella", "Tierra / Marte", "Marte / Júpiter",
+    "Júpiter / Saturno", "Saturno / Júpiter", "Galaxia / Universo", "Agujero negro / Estrella", "Cohete / Nave espacial",
+    "Astronauta / Extraterrestre", "Meteorito / Cometa", "Cometa / Meteorito", "Eclipse / Luna llena",
+    "Átomo / Molécula", "Célula / Bacteria", "Bacteria / Virus", "Virus / Bacteria", "ADN / Gen", "Gravedad / Imán",
+    "Imán / Gravedad", "Electricidad / Rayo", "Microscopio / Telescopio", "Telescopio / Microscopio", "Dinosaurio / Fósil",
+    "Fósil / Dinosaurio", "Laboratorio / Hospital", "Volcán / Terremoto", "Terremoto / Volcán", "Robot / Ordenador",
+    "Matemáticas / Física", "Física / Química", "Química / Física", "Biología / Química", "Fuego / Lava"
   ]},
 
   "Cuerpo humano": { icono: "🫀", palabras: [
-    "Corazón / Pulmón", "Pulmón / Corazón", "Cerebro / Cráneo", "Hígado / Riñón", "Riñón / Hígado", "Estómago / Intestino",
-    "Ojo / Oreja", "Oreja / Nariz", "Nariz / Boca", "Boca / Labios", "Diente / Muela", "Lengua / Diente", "Mano / Pie",
-    "Pie / Mano", "Rodilla / Codo", "Codo / Rodilla", "Hombro / Cadera", "Cuello / Garganta", "Espalda / Pecho",
-    "Ombligo / Barriga", "Uña / Pelo", "Pelo / Barba", "Ceja / Pestaña", "Pestaña / Ceja", "Dedo / Uña", "Tobillo / Muñeca",
+    "Corazón / Pulmón", "Pulmón / Corazón", "Cerebro / Cabeza", "Estómago / Barriga", "Ojo / Oreja", "Oreja / Nariz",
+    "Nariz / Boca", "Boca / Labios", "Diente / Muela", "Lengua / Diente", "Mano / Pie", "Pie / Mano", "Rodilla / Codo",
+    "Codo / Rodilla", "Hombro / Cadera", "Cuello / Garganta", "Espalda / Pecho", "Ombligo / Barriga", "Uña / Pelo",
+    "Pelo / Barba", "Barba / Bigote", "Ceja / Pestaña", "Pestaña / Ceja", "Dedo / Uña", "Tobillo / Muñeca",
     "Muñeca / Tobillo", "Hueso / Músculo", "Músculo / Hueso", "Sangre / Sudor", "Piel / Pelo", "Esqueleto / Calavera",
-    "Talón / Tobillo", "Mejilla / Barbilla", "Barbilla / Mandíbula", "Bíceps / Tríceps"
+    "Talón / Tobillo", "Mejilla / Barbilla", "Barbilla / Mejilla", "Culo / Espalda"
   ]},
 
-  "Plantas": { icono: "🌿", palabras: [
-    "Roble / Pino", "Pino / Abeto", "Palmera / Cocotero", "Higuera / Olivo", "Cactus / Aloe vera", "Aloe vera / Cactus",
-    "Rosa / Clavel", "Girasol / Margarita", "Tulipán / Rosa", "Orquídea / Lirio", "Lavanda / Romero", "Menta / Hierbabuena",
-    "Albahaca / Perejil", "Tomatera / Pimiento", "Patata / Batata", "Bambú / Caña", "Helecho / Musgo", "Lirio / Orquídea",
-    "Magnolia / Jazmín", "Olivo / Higuera", "Drago / Palmera", "Margarita / Girasol", "Clavel / Rosa", "Jazmín / Azahar",
-    "Musgo / Césped", "Césped / Musgo", "Seta / Champiñón", "Champiñón / Seta", "Calabaza / Sandía", "Sandía / Melón",
-    "Melón / Sandía", "Plátano / Platanera", "Naranjo / Limonero", "Limonero / Naranjo", "Manzano / Peral",
-    "Tabaiba / Cardón", "Cardón / Tabaiba", "Bonsái / Árbol", "Hiedra / Enredadera", "Buganvilla / Hibisco"
+  "Naturaleza": { icono: "🌿", palabras: [
+    "Árbol / Arbusto", "Pino / Palmera", "Palmera / Pino", "Cactus / Aloe vera", "Aloe vera / Cactus", "Rosa / Clavel",
+    "Girasol / Margarita", "Margarita / Girasol", "Tulipán / Rosa", "Flor / Hoja", "Hoja / Flor", "Césped / Musgo",
+    "Seta / Champiñón", "Drago / Palmera", "Bambú / Caña", "Bonsái / Árbol", "Lluvia / Tormenta", "Tormenta / Huracán",
+    "Huracán / Tornado", "Tornado / Huracán", "Nieve / Granizo", "Granizo / Nieve", "Niebla / Calima", "Calima / Niebla",
+    "Arcoíris / Aurora boreal", "Rayo / Trueno", "Trueno / Rayo", "Viento / Brisa", "Ola / Marea", "Río / Lago", "Lago / Río",
+    "Cascada / Río", "Mar / Océano", "Océano / Mar", "Montaña / Colina", "Isla / Península", "Playa / Cala", "Desierto / Playa",
+    "Glaciar / Iceberg", "Iceberg / Glaciar", "Selva / Bosque", "Arena / Tierra", "Piedra / Roca", "Lava / Magma",
+    "Amanecer / Atardecer", "Atardecer / Amanecer", "Primavera / Verano", "Verano / Primavera", "Otoño / Invierno", "Invierno / Otoño"
   ]},
 
   "Instrumentos musicales": { icono: "🎸", palabras: [
-    "Guitarra / Bajo", "Piano / Teclado", "Violín / Viola", "Batería / Cajón", "Saxofón / Clarinete", "Flauta / Flauta dulce",
-    "Trompeta / Trombón", "Acordeón / Armónica", "Ukelele / Timple", "Cello / Contrabajo", "Contrabajo / Cello",
-    "Clarinete / Oboe", "Órgano / Piano", "Armónica / Acordeón", "Mandolina / Laúd", "Xilófono / Marimba", "Oboe / Fagot",
-    "Trombón / Tuba", "Banjo / Ukelele", "Sitar / Guitarra", "Timple / Ukelele", "Bajo / Guitarra", "Arpa / Lira",
-    "Pandereta / Maracas", "Maracas / Pandereta", "Triángulo / Campana", "Tambor / Batería", "Gaita / Flauta",
-    "Castañuelas / Palmas", "Tuba / Trombón", "Cajón / Batería", "DJ / Mesa de mezclas"
+    "Guitarra / Bajo", "Bajo / Guitarra", "Piano / Teclado", "Teclado / Piano", "Violín / Chelo", "Batería / Tambor",
+    "Tambor / Batería", "Saxofón / Trompeta", "Trompeta / Saxofón", "Flauta / Clarinete", "Clarinete / Flauta",
+    "Acordeón / Armónica", "Armónica / Acordeón", "Ukelele / Timple", "Timple / Ukelele", "Arpa / Guitarra",
+    "Pandereta / Maracas", "Maracas / Pandereta", "Triángulo / Campana", "Gaita / Flauta", "Castañuelas / Pandereta",
+    "Trombón / Trompeta", "Xilófono / Piano", "Micrófono / Altavoz", "Cajón / Batería"
   ]},
 
   "Emociones": { icono: "😄", palabras: [
-    "Alegría / Euforia", "Tristeza / Nostalgia", "Ira / Frustración", "Sorpresa / Confusión", "Miedo / Ansiedad",
-    "Calma / Alivio", "Nostalgia / Tristeza", "Euforia / Alegría", "Vergüenza / Culpa", "Orgullo / Satisfacción",
-    "Ansiedad / Nervios", "Curiosidad / Interés", "Empatía / Compasión", "Envidia / Celos", "Amor / Cariño",
-    "Aburrimiento / Pereza", "Confusión / Duda", "Gratitud / Admiración", "Frustración / Ira", "Alivio / Calma",
-    "Celos / Envidia", "Esperanza / Ilusión", "Ilusión / Esperanza", "Asco / Rechazo", "Soledad / Tristeza",
-    "Nervios / Ansiedad", "Pereza / Aburrimiento", "Cariño / Amor", "Odio / Rencor", "Paz / Calma"
+    "Alegría / Felicidad", "Felicidad / Alegría", "Tristeza / Pena", "Enfado / Rabia", "Rabia / Enfado", "Sorpresa / Susto",
+    "Susto / Miedo", "Miedo / Susto", "Calma / Tranquilidad", "Vergüenza / Corte", "Orgullo / Satisfacción",
+    "Nervios / Estrés", "Estrés / Nervios", "Curiosidad / Interés", "Envidia / Celos", "Celos / Envidia", "Amor / Cariño",
+    "Cariño / Amor", "Aburrimiento / Pereza", "Pereza / Aburrimiento", "Confusión / Duda", "Asco / Grima",
+    "Grima / Asco", "Ilusión / Emoción", "Soledad / Tristeza", "Odio / Rabia", "Risa / Sonrisa", "Llanto / Tristeza"
   ]},
 
   "Ropa y accesorios": { icono: "👕", palabras: [
-    "Camiseta / Polo", "Pantalones / Vaqueros", "Zapatillas / Zapatos", "Chaqueta / Abrigo", "Gorra / Sombrero",
-    "Sombrero / Gorra", "Bufanda / Pañuelo", "Guantes / Manoplas", "Calcetines / Medias", "Corbata / Pajarita",
-    "Vestido / Falda", "Falda / Vestido", "Botas / Botines", "Chanclas / Sandalias", "Pijama / Chándal", "Traje / Esmoquin",
-    "Cinturón / Tirantes", "Reloj / Pulsera", "Mochila / Riñonera", "Bolso / Cartera", "Sudadera / Jersey", "Jersey / Sudadera",
-    "Chándal / Pijama", "Bañador / Bikini", "Bikini / Bañador", "Gafas de sol / Gafas", "Collar / Colgante", "Pendientes / Piercing",
-    "Anillo / Pulsera", "Gorro de lana / Gorra", "Pantalón corto / Bañador", "Camiseta de fútbol / Camiseta",
-    "Chaleco / Chaqueta", "Bata / Albornoz", "Albornoz / Toalla", "Riñonera / Mochila", "Calzoncillos / Bañador",
-    "Uniforme / Traje", "Disfraz / Uniforme", "Crocs / Chanclas"
+    "Camiseta / Sudadera", "Sudadera / Camiseta", "Pantalones / Vaqueros", "Vaqueros / Pantalones", "Zapatillas / Zapatos",
+    "Chaqueta / Abrigo", "Abrigo / Chaqueta", "Gorra / Sombrero", "Sombrero / Gorra", "Bufanda / Pañuelo",
+    "Guantes / Calcetines", "Calcetines / Medias", "Corbata / Pajarita", "Vestido / Falda", "Falda / Vestido",
+    "Botas / Zapatillas", "Chanclas / Sandalias", "Sandalias / Chanclas", "Pijama / Chándal", "Chándal / Pijama",
+    "Traje / Corbata", "Cinturón / Tirantes", "Reloj / Pulsera", "Mochila / Riñonera", "Riñonera / Mochila",
+    "Bolso / Mochila", "Jersey / Sudadera", "Bañador / Bikini", "Bikini / Bañador", "Gafas de sol / Gafas",
+    "Collar / Cadena", "Pendientes / Piercing", "Anillo / Pulsera", "Gorro / Gorra", "Chaleco / Chaqueta",
+    "Albornoz / Toalla", "Uniforme / Disfraz", "Disfraz / Uniforme", "Crocs / Chanclas"
   ]},
 
   "Herramientas": { icono: "🔧", palabras: [
-    "Martillo / Maza", "Destornillador / Llave inglesa", "Alicates / Tenazas", "Taladro / Atornillador", "Sierra / Serrucho",
-    "Llave inglesa / Alicates", "Cúter / Tijeras", "Nivel / Escuadra", "Cinta métrica / Regla", "Lima / Lija",
-    "Soldador / Soplete", "Cepillo de carpintero / Lija", "Maza / Martillo", "Pala / Rastrillo", "Rastrillo / Pala",
-    "Soplete / Soldador", "Broca / Tornillo", "Torno / Taladro", "Tijeras / Cúter", "Engranaje / Tuerca", "Tornillo / Clavo",
-    "Clavo / Tornillo", "Tuerca / Arandela", "Escalera / Andamio", "Carretilla / Pala", "Hacha / Sierra", "Pistola de silicona / Pegamento",
-    "Lija / Lima", "Gato (coche) / Llave de rueda", "Cortacésped / Desbrozadora", "Manguera / Regadera", "Brocha / Rodillo",
-    "Rodillo / Brocha", "Linterna frontal / Linterna", "Cinta americana / Celo"
+    "Martillo / Mazo", "Destornillador / Llave inglesa", "Llave inglesa / Alicates", "Alicates / Tijeras", "Taladro / Destornillador",
+    "Sierra / Hacha", "Hacha / Sierra", "Cúter / Tijeras", "Tijeras / Cúter", "Metro / Regla", "Pala / Rastrillo",
+    "Rastrillo / Pala", "Tornillo / Clavo", "Clavo / Tornillo", "Escalera / Andamio", "Carretilla / Pala",
+    "Pistola de silicona / Pegamento", "Manguera / Regadera", "Regadera / Manguera", "Brocha / Rodillo", "Rodillo / Brocha",
+    "Linterna / Lámpara", "Cinta americana / Celo", "Cortacésped / Tijeras de podar", "Caja de herramientas / Maletín"
   ]},
 
   "Instituto": { icono: "🏫", palabras: [
-    "Examen / Control", "Control / Examen", "Recreo / Descanso", "Deberes / Trabajo", "Profesor de guardia / Tutor",
-    "Tutor / Director", "Director / Jefe de estudios", "Pizarra / Proyector", "Proyector / Pizarra digital", "Libreta / Cuaderno",
-    "Estuche / Mochila", "Típex / Goma de borrar", "Goma de borrar / Típex", "Subrayador / Rotulador", "Calculadora / Regla",
-    "Compás / Transportador", "Matemáticas / Física", "Lengua / Literatura", "Inglés / Francés", "Historia / Geografía",
-    "Educación Física / Recreo", "Tecnología / Informática", "Filosofía / Ética", "Química / Biología", "Biología / Química",
-    "Recuperación / Examen", "Boletín de notas / Examen", "Excursión / Viaje de estudios", "Viaje de estudios / Excursión",
-    "Graduación / Fiesta", "Cafetería / Comedor", "Conserje / Profesor", "Expulsión / Parte", "Parte / Expulsión",
-    "Chuleta / Apuntes", "Apuntes / Chuleta", "Trabajo en grupo / Exposición", "Exposición / Presentación", "Selectividad / Bachillerato",
-    "Bachillerato / ESO", "EBAU / Selectividad", "Taquilla / Mochila", "Huelga / Vacaciones", "Novillos / Faltar a clase"
+    "Examen / Control", "Control / Examen", "Recreo / Descanso", "Deberes / Trabajo", "Tutor / Director",
+    "Director / Jefe de estudios", "Pizarra / Proyector", "Proyector / Pizarra", "Libreta / Cuaderno", "Cuaderno / Libreta",
+    "Estuche / Mochila", "Típex / Goma", "Goma / Típex", "Subrayador / Rotulador", "Rotulador / Subrayador",
+    "Compás / Regla", "Matemáticas / Física", "Lengua / Literatura", "Inglés / Francés", "Francés / Inglés",
+    "Historia / Geografía", "Geografía / Historia", "Educación Física / Recreo", "Informática / Tecnología",
+    "Filosofía / Historia", "Química / Biología", "Biología / Química", "Recuperación / Examen", "Notas / Examen",
+    "Excursión / Viaje de estudios", "Viaje de estudios / Excursión", "Graduación / Fiesta", "Cafetería / Comedor",
+    "Conserje / Profesor", "Expulsión / Castigo", "Castigo / Expulsión", "Chuleta / Apuntes", "Apuntes / Chuleta",
+    "Exposición / Trabajo en grupo", "Bachillerato / ESO", "ESO / Bachillerato", "Selectividad / Bachillerato",
+    "Taquilla / Mochila", "Huelga / Vacaciones", "Vacaciones / Huelga"
   ]},
 
   "Fiesta y ocio": { icono: "🎉", palabras: [
     "Cumpleaños / Fiesta", "Fiesta / Discoteca", "Discoteca / Fiesta", "Concierto / Festival", "Festival / Concierto",
-    "Karaoke / Concierto", "Barbacoa / Paella en la playa", "Pijamada / Acampada", "Acampada / Pijamada", "Carnaval / Halloween",
-    "Halloween / Carnaval", "Navidad / Reyes", "Reyes Magos / Papá Noel", "Papá Noel / Reyes Magos", "Nochevieja / Año Nuevo",
-    "Uvas / Cava", "Fuegos artificiales / Petardos", "Petardos / Fuegos artificiales", "Disfraz / Máscara", "Piñata / Globo",
-    "Tarta de cumpleaños / Velas", "Regalo / Sorpresa", "Juegos de mesa / Cartas", "UNO / Parchís", "Parchís / Oca",
-    "Monopoly / Catán", "Cartas / Póker", "Verdad o reto / Yo nunca", "Yo nunca / Verdad o reto", "Escondite / Pilla pilla",
-    "Pilla pilla / Escondite", "Bolera / Billar", "Billar / Futbolín", "Futbolín / Billar", "Feria / Parque de atracciones",
-    "Noria / Montaña rusa", "Montaña rusa / Noria", "Cine / Netflix", "Maratón de series / Maratón de pelis", "Día de playa / Día de piscina",
-    "Viaje / Excursión", "Boda / Comunión", "Comunión / Bautizo"
+    "Karaoke / Concierto", "Barbacoa / Picnic", "Picnic / Barbacoa", "Pijamada / Acampada", "Acampada / Pijamada",
+    "Carnaval / Halloween", "Halloween / Carnaval", "Navidad / Reyes", "Reyes Magos / Papá Noel", "Papá Noel / Reyes Magos",
+    "Nochevieja / Navidad", "Uvas / Cava", "Fuegos artificiales / Petardos", "Petardos / Fuegos artificiales",
+    "Disfraz / Máscara", "Piñata / Globo", "Tarta / Velas", "Regalo / Sorpresa", "UNO / Parchís", "Parchís / Oca",
+    "Monopoly / Parchís", "Cartas / Póker", "Póker / Cartas", "Escondite / Pilla pilla", "Pilla pilla / Escondite",
+    "Bolera / Billar", "Billar / Futbolín", "Futbolín / Billar", "Feria / Parque de atracciones", "Noria / Montaña rusa",
+    "Montaña rusa / Noria", "Cine / Netflix", "Viaje / Excursión", "Boda / Comunión", "Comunión / Boda"
   ]},
 
   "Fantasía y terror": { icono: "🐉", palabras: [
     "Dragón / Dinosaurio", "Vampiro / Zombi", "Zombi / Vampiro", "Hombre lobo / Vampiro", "Fantasma / Espíritu",
-    "Bruja / Mago", "Mago / Bruja", "Hada / Elfo", "Elfo / Enano", "Enano / Elfo", "Unicornio / Pegaso", "Pegaso / Unicornio",
-    "Sirena / Tritón", "Duende / Gnomo", "Ogro / Troll", "Troll / Ogro", "Fénix / Dragón", "Momia / Zombi", "Esqueleto / Calavera",
-    "Alien / Ovni", "Ovni / Alien", "Robot / Androide", "Demonio / Ángel", "Ángel / Demonio", "Payaso / Bufón", "Varita / Báculo",
-    "Poción / Hechizo", "Hechizo / Poción", "Castillo encantado / Casa encantada", "Kraken / Leviatán", "Yeti / Bigfoot",
-    "Bigfoot / Yeti", "Minotauro / Centauro", "Centauro / Minotauro", "Medusa (mitología) / Gorgona", "Ninja / Samurái",
-    "Samurái / Ninja", "Pirata / Corsario", "Caballero / Vikingo", "Vikingo / Pirata", "Superhéroe / Villano", "Villano / Superhéroe"
+    "Bruja / Mago", "Mago / Bruja", "Hada / Elfo", "Elfo / Duende", "Duende / Elfo", "Unicornio / Pegaso", "Pegaso / Unicornio",
+    "Sirena / Delfín", "Ogro / Gigante", "Gigante / Ogro", "Fénix / Dragón", "Momia / Zombi", "Esqueleto / Calavera",
+    "Calavera / Esqueleto", "Extraterrestre / Ovni", "Ovni / Extraterrestre", "Robot / Androide", "Demonio / Ángel",
+    "Ángel / Demonio", "Payaso / Bufón", "Varita / Escoba", "Poción / Hechizo", "Hechizo / Poción",
+    "Casa encantada / Castillo", "Yeti / Bigfoot", "Bigfoot / Yeti", "Ninja / Samurái", "Samurái / Ninja",
+    "Pirata / Vikingo", "Vikingo / Pirata", "Caballero / Príncipe", "Superhéroe / Villano", "Villano / Superhéroe"
   ]},
 
   "Transporte": { icono: "🚌", palabras: [
@@ -464,54 +394,31 @@ const CATEGORIAS = {
     "Barco / Lancha", "Ferry / Crucero", "Crucero / Ferry", "Lancha / Moto de agua", "Moto de agua / Lancha", "Velero / Barco",
     "Kayak / Canoa", "Canoa / Kayak", "Taxi / Uber", "Uber / Taxi", "Camión / Furgoneta", "Furgoneta / Camión",
     "Ambulancia / Coche de policía", "Coche de policía / Ambulancia", "Camión de bomberos / Ambulancia", "Tractor / Excavadora",
-    "Excavadora / Grúa", "Grúa / Excavadora", "Quad / Buggy", "Buggy / Quad", "Globo aerostático / Dirigible", "Cohete / Nave espacial",
-    "Submarino / Barco", "Teleférico / Telesilla", "Monopatín / Patinete", "Caravana / Autocaravana", "Limusina / Coche",
-    "Karts / Coche de choque", "Coche de choque / Karts", "Patines / Monopatín"
+    "Excavadora / Grúa", "Grúa / Excavadora", "Quad / Buggy", "Buggy / Quad", "Globo / Dirigible", "Cohete / Nave espacial",
+    "Submarino / Barco", "Teleférico / Telesilla", "Caravana / Autocaravana", "Limusina / Coche", "Karts / Coches de choque",
+    "Coches de choque / Karts", "Patines / Monopatín", "Monopatín / Patines"
   ]},
 
   "Casa": { icono: "🏠", palabras: [
-    "Cocina / Comedor", "Comedor / Salón", "Salón / Comedor", "Baño / Aseo", "Dormitorio / Habitación", "Garaje / Trastero",
+    "Cocina / Comedor", "Comedor / Salón", "Salón / Comedor", "Baño / Ducha", "Dormitorio / Habitación", "Garaje / Trastero",
     "Trastero / Garaje", "Terraza / Balcón", "Balcón / Terraza", "Azotea / Terraza", "Jardín / Patio", "Patio / Jardín",
-    "Pasillo / Recibidor", "Ático / Buhardilla", "Sótano / Garaje", "Ascensor / Escaleras", "Escaleras / Ascensor",
-    "Ventana / Puerta", "Puerta / Ventana", "Timbre / Telefonillo", "Buzón / Telefonillo", "Chimenea / Estufa",
-    "Aire acondicionado / Ventilador", "Ventilador / Aire acondicionado", "Bañera / Ducha", "Ducha / Bañera", "Váter / Bidé",
-    "Litera / Cama", "Armario / Cómoda", "Cómoda / Mesita de noche", "Estantería / Librería", "Sofá cama / Sofá",
-    "Lavavajillas / Lavadora", "Tostadora / Sandwichera", "Freidora de aire / Horno", "Cafetera / Tetera", "Batidora / Licuadora",
-    "Piscina / Jacuzzi", "Jacuzzi / Piscina", "Hamaca / Tumbona"
+    "Pasillo / Recibidor", "Sótano / Garaje", "Ascensor / Escaleras", "Escaleras / Ascensor", "Ventana / Puerta",
+    "Puerta / Ventana", "Timbre / Telefonillo", "Buzón / Telefonillo", "Chimenea / Estufa", "Aire acondicionado / Ventilador",
+    "Ventilador / Aire acondicionado", "Bañera / Ducha", "Ducha / Bañera", "Váter / Lavabo", "Litera / Cama",
+    "Armario / Cómoda", "Cómoda / Mesita de noche", "Estantería / Armario", "Sofá cama / Sofá", "Tostadora / Sandwichera",
+    "Freidora de aire / Horno", "Cafetera / Tetera", "Batidora / Licuadora", "Piscina / Jacuzzi", "Jacuzzi / Piscina",
+    "Hamaca / Tumbona", "Tumbona / Hamaca"
   ]},
 
   "Streamers y famosos": { icono: "🌟", palabras: [
     "Ibai / AuronPlay", "AuronPlay / Ibai", "El Rubius / TheGrefg", "TheGrefg / El Rubius", "Illojuan / Ibai",
-    "Spreen / Rivers", "Rivers / Spreen", "Willyrex / Vegetta777", "Vegetta777 / Willyrex", "Mr. Beast / Speed",
-    "Speed / Kai Cenat", "Kai Cenat / Speed", "Xokas / Illojuan", "Westcol / Spreen", "DjMaRiiO / Ibai", "Mrwhosetheboss / Xataka",
-    "Rubén Doblas / Ibai", "Elon Musk / Mark Zuckerberg", "Mark Zuckerberg / Elon Musk", "Jeff Bezos / Elon Musk",
-    "Pablo Motos / David Broncano", "David Broncano / Pablo Motos", "Jordi Wild / Ibai", "La Pantoja / Lola Flores",
-    "Kim Kardashian / Kylie Jenner", "Kylie Jenner / Kim Kardashian", "Zendaya / Tom Holland", "Tom Holland / Zendaya",
-    "Leonardo DiCaprio / Brad Pitt", "Brad Pitt / Leonardo DiCaprio", "Dwayne Johnson (La Roca) / Vin Diesel",
-    "Vin Diesel / Dwayne Johnson (La Roca)", "Rafa Nadal / Carlos Alcaraz", "Carlos Alcaraz / Rafa Nadal", "Fernando Alonso / Carlos Sainz",
-    "Carlos Sainz / Fernando Alonso", "Marc Márquez / Valentino Rossi", "LeBron James / Michael Jordan", "Michael Jordan / LeBron James",
-    "Ilia Topuria / Conor McGregor", "Conor McGregor / Ilia Topuria", "Usain Bolt / Carl Lewis"
-  ]},
-
-  "Memes y jerga": { icono: "😂", palabras: [
-    "67 / 41", "Aura / Rizz", "Rizz / Aura", "Skibidi / Sigma", "Sigma / Alfa", "NPC / Bot", "Cringe / Vergüenza ajena",
-    "Mewing / Looksmaxxing", "Looksmaxxing / Mewing", "Bro / Tío", "Random / Raro", "Crush / Novio", "Ghostear / Dejar en visto",
-    "Dejar en visto / Ghostear", "Funar / Cancelar", "Cancelar / Funar", "Red flag / Green flag", "Green flag / Red flag",
-    "POV / Storytime", "Storytime / POV", "Basado / Real", "Real / Basado", "Tralalero Tralala / Bombardiro Crocodilo",
-    "Bombardiro Crocodilo / Tralalero Tralala", "Tung Tung Tung Sahur / Tralalero Tralala", "Rickroll / Trollface",
-    "Stonks / Dinero", "Chad / Sigma", "Delulu / Flipado", "Flipado / Delulu", "GOAT / Crack", "Crack / Máquina", "Máquina / Crack",
-    "Hater / Troll", "Troll / Hater", "Spoiler / Teaser", "Lag / Bug", "Bug / Lag", "Noob / Pro", "Pro / Noob", "Shiny / Legendario",
-    "Fit / Outfit", "Outfit / Fit", "Vibe / Rollo", "Literal / Literalmente", "Mood / Vibe", "Chill / Tranqui", "Facha / Estilo"
-  ]},
-
-  "Naturaleza y clima": { icono: "⛅", palabras: [
-    "Lluvia / Tormenta", "Tormenta / Huracán", "Huracán / Tornado", "Tornado / Huracán", "Nieve / Granizo", "Granizo / Nieve",
-    "Niebla / Calima", "Calima / Niebla", "Arcoíris / Aurora boreal", "Aurora boreal / Arcoíris", "Rayo / Trueno", "Trueno / Rayo",
-    "Viento / Brisa", "Sol / Calor", "Ola / Marea", "Marea / Ola", "Río / Lago", "Lago / Laguna", "Cascada / Río", "Mar / Océano",
-    "Océano / Mar", "Volcán / Montaña", "Montaña / Colina", "Isla / Islote", "Playa / Cala", "Desierto / Sabana", "Glaciar / Iceberg",
-    "Iceberg / Glaciar", "Selva / Jungla", "Arena / Tierra", "Piedra / Roca", "Lava / Magma", "Terremoto / Erupción",
-    "Eclipse / Luna llena", "Luna llena / Eclipse", "Estrella fugaz / Cometa", "Cometa / Meteorito", "Amanecer / Atardecer",
-    "Atardecer / Amanecer", "Primavera / Verano", "Verano / Primavera", "Otoño / Invierno", "Invierno / Otoño"
+    "Willyrex / Vegetta777", "Vegetta777 / Willyrex", "MrBeast / Speed", "Speed / MrBeast", "Xokas / Illojuan",
+    "Elon Musk / Mark Zuckerberg", "Mark Zuckerberg / Elon Musk", "Pablo Motos / David Broncano",
+    "David Broncano / Pablo Motos", "Kim Kardashian / Kylie Jenner", "Kylie Jenner / Kim Kardashian", "Zendaya / Tom Holland",
+    "Tom Holland / Zendaya", "Leonardo DiCaprio / Brad Pitt", "Brad Pitt / Leonardo DiCaprio", "La Roca / Vin Diesel",
+    "Vin Diesel / La Roca", "Rafa Nadal / Carlos Alcaraz", "Carlos Alcaraz / Rafa Nadal", "Fernando Alonso / Carlos Sainz",
+    "Carlos Sainz / Fernando Alonso", "LeBron James / Michael Jordan", "Michael Jordan / LeBron James",
+    "Ilia Topuria / Conor McGregor", "Conor McGregor / Ilia Topuria", "Usain Bolt / Michael Jordan"
   ]}
 };
 
@@ -522,6 +429,7 @@ const CATEGORIAS = {
    y hay que descubrir quién tenía otra pregunta.
    Formato: [pregunta normal, pregunta del impostor]
    {J} y {J2} se cambian por jugadores de la partida.
+   (Los nombres de los jugadores solo se usan aquí, en las preguntas.)
    ========================================================= */
 const PREGUNTAS = [
   ["¿Cuántas horas duermes al día?", "¿Cuántas horas pasas con el móvil al día?"],

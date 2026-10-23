@@ -334,12 +334,26 @@ test('"no hay impostor" no se puede votar sin rondas trampa', () => {
   assert.ok(S.votar(sala.codigo, 'a', ['nadie']).error);
 });
 
-test('las palabras con jugadores usan los nombres de la sala', () => {
-  const { S, sala } = partida({ categorias: ['Vosotros'] });
-  const nombres = ['Ana', 'Bea', 'Cris', 'Dani', 'Eva'];
-  assert.ok(nombres.some((n) => sala.ronda.palabra.includes(n)), sala.ronda.palabra);
-  assert.ok(!sala.ronda.palabra.includes('{J'));
-  assert.notEqual(sala.ronda.palabra, sala.ronda.gemela);
+test('en el modo normal solo hay palabras sueltas, sin nombres de jugadores', () => {
+  for (const [cat, info] of Object.entries(banco.CATEGORIAS)) {
+    for (const p of info.palabras) {
+      assert.ok(!p.includes('{J'), `${cat}: ${p} usa el nombre de un jugador`);
+      for (const parte of p.split(' / ')) assert.ok(parte.split(' ').length <= 5, `${cat}: "${parte}" parece una frase`);
+    }
+  }
+});
+
+test('las preguntas sobre vosotros usan los nombres de la sala', () => {
+  let encontrada = false;
+  for (let semilla = 1; semilla < 60 && !encontrada; semilla++) {
+    const { sala } = partida({ modo: 'preguntas', picante: false, preguntasJugadores: true }, semilla);
+    if (sala.ronda.categoria.includes('vosotros')) {
+      encontrada = true;
+      assert.ok(['Ana', 'Bea', 'Cris', 'Dani', 'Eva'].some((n) => sala.ronda.palabra.includes(n)), sala.ronda.palabra);
+      assert.ok(!sala.ronda.palabra.includes('{J'));
+    }
+  }
+  assert.ok(encontrada, 'no ha salido ninguna pregunta sobre los jugadores');
 });
 
 test('acertar la palabra perdona tildes y mayusculas', () => {

@@ -52,7 +52,7 @@ export const COLORES = [
 
 export const AJUSTES_DEFECTO = {
   modo: 'clasico',          // clasico | undercover | preguntas
-  categorias: ['Comida', 'Animales', 'Videojuegos', 'Lugares Locales', 'Vosotros'],
+  categorias: ['Comida', 'Animales', 'Videojuegos', 'Lugares Locales', 'Objetos'],
   impostores: 0,            // 0 = automatico segun jugadores
   pista: 'categoria',       // nada | categoria | parecida | ambas
   tiempoDebate: 180,        // segundos para debatir y votar a la vez
@@ -509,7 +509,7 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
     let siguiente = 'debate';
     let resultado = null;
     const mostrar = sala.ajustes.mostrarRol;
-    const quien = r.modo === 'undercover' ? 'el undercover' : 'el impostor';
+    const quien = 'el impostor';
     const lista = (ids) => {
       const n = ids.map((id) => nombreDe(sala, id));
       return n.length > 1 ? `${n.slice(0, -1).join(', ')} y ${n[n.length - 1]}` : n[0];
@@ -770,7 +770,7 @@ export function crearSalas({ ahora = () => Date.now(), azar = Math.random, banco
         respuesta: r.respuestas[paraId] || null,
         votos: fase === 'debate' ? (r.votos[paraId] || null) : null,
         // El impostor de verdad (no el de una ronda trampa de todos) sabe que lo es.
-        // En Undercover y Preguntas no lo sabe: no se le dice.
+        // En Despistado y Preguntas no lo sabe: no se le dice.
         soyImpostor: r.modo === 'clasico' ? r.impostores.has(paraId) : null
       };
     } else {

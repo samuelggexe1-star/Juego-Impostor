@@ -13,16 +13,14 @@ Juego de fiesta para jugar con un solo móvil pasándolo de mano en mano. Todos 
 ## Modos
 
 - 🕵️ **Clásico**: el impostor sabe que lo es. Puede tener pista (categoría, palabra parecida o las dos).
-- 🎭 **Undercover**: el impostor recibe una palabra parecida (Pizza / Lasaña) y no sabe que es el impostor.
+- 🎭 **Despistado**: el impostor recibe una palabra parecida (Pizza / Hamburguesa) y no sabe que es el impostor.
 - 💬 **Preguntas**: todos responden a una pregunta y el impostor tiene otra distinta.
 - 👑 **Admin**: alguien que no juega elige la palabra y los impostores.
 
 ## Funciones
 
-- 42 categorías y más de 1.600 palabras, cada una con su "palabra gemela".
-- Categoría **Vosotros 👥**: frases con los jugadores de la partida ("El móvil de Mateo", "Diego a las 3 de la mañana").
-- Categoría **Cosas raras 🤢** para echar unas risas.
-- Modo Preguntas con preguntas **picantes 🌶️** y preguntas **sobre los jugadores** (se activan en Ajustes).
+- 39 categorías y más de 1.400 palabras sueltas y conocidas, cada una con su "palabra gemela".
+- Modo Preguntas con preguntas **picantes 🌶️** y preguntas **sobre los jugadores de la partida** (se activan en Ajustes). Los nombres de los jugadores solo se usan ahí.
 - Categorías propias creadas desde la app.
 - Número de impostores automático según jugadores, o manual.
 - Rondas trampa: a veces no hay impostor o lo son todos (probabilidad ajustable).

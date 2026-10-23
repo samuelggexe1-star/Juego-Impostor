@@ -567,7 +567,7 @@ function mostrarTurnoReparto() {
   }
 }
 
-// En Undercover y Preguntas el impostor no sabe que lo es
+// En Despistado y Preguntas el impostor no sabe que lo es
 function sabeQueEsImpostor(i) {
   return ronda.impostores.has(i) && (ronda.modo === "clasico" || ronda.modo === "admin");
 }
@@ -1096,7 +1096,7 @@ function revelarExpulsado(idx) {
 
   if (esImpostor) {
     rol.classList.add("es-impostor");
-    if (r.modo === "undercover") rol.innerHTML = `ERA EL UNDERCOVER 🎭<small>Su palabra era "${esc(r.gemela)}"</small>`;
+    if (r.modo === "undercover") rol.innerHTML = `ERA EL IMPOSTOR 🎭<small>Su palabra era "${esc(r.gemela)}"</small>`;
     else if (r.modo === "preguntas") rol.innerHTML = `ERA EL IMPOSTOR 🔪<small>Su pregunta era: "${esc(r.gemela)}"</small>`;
     else rol.innerHTML = "ERA IMPOSTOR 🔪";
     melodia([[523], [659], [784], [1046]]);
@@ -1232,7 +1232,7 @@ function terminar(resultado, extra = {}) {
   $("#finalPalabra").textContent = r.palabra;
   const mostrarGemela = (r.modo === "undercover" || esPregunta) && r.trampa !== "ninguno";
   $("#finalGemelaCaja").classList.toggle("oculto", !mostrarGemela);
-  $("#finalEtiquetaGemela").textContent = esPregunta ? "La pregunta del impostor era" : "El undercover tenía";
+  $("#finalEtiquetaGemela").textContent = esPregunta ? "La pregunta del impostor era" : "El impostor tenía";
   $("#finalGemela").textContent = r.gemela;
   $("#finalImpostores").textContent = r.trampa === "ninguno" ? "Nadie 🤡" : r.trampa === "todos" ? "Todos 😂" : listaNombres(nombresImpostores);
   const conRespuestas = esPregunta && Object.keys(r.respuestas).length > 0;
@@ -1402,7 +1402,7 @@ $("#btnReiniciarPuntos").addEventListener("click", () => {
   pintarJugadores();
 });
 
-const NOMBRES_MODO = { clasico: "🕵️ Clásico", undercover: "🎭 Undercover", preguntas: "💬 Preguntas", admin: "👑 Admin" };
+const NOMBRES_MODO = { clasico: "🕵️ Clásico", undercover: "🎭 Despistado", preguntas: "💬 Preguntas", admin: "👑 Admin" };
 
 function pintarHistorial() {
   const cont = $("#listaHistorial");

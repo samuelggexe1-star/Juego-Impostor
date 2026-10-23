@@ -235,7 +235,7 @@ async function mandar(tipo, datos = {}) {
 
 // ------------------------------------------------------------------ salas publicas
 
-const NOMBRES_MODO = { clasico: '🕵️ Clásico', undercover: '🎭 Undercover', preguntas: '💬 Preguntas' };
+const NOMBRES_MODO = { clasico: '🕵️ Clásico', undercover: '🎭 Despistado', preguntas: '💬 Preguntas' };
 
 async function pintarPublicas() {
   if (codigoActual || !$('#pEntrada').classList.contains('activa')) return;
@@ -660,7 +660,7 @@ const PRESETS = [
 
 const MODOS_OL = [
   ['clasico', '🕵️', 'Clásico', 'El impostor sabe que lo es'],
-  ['undercover', '🎭', 'Undercover', 'Palabra parecida, no lo sabe'],
+  ['undercover', '🎭', 'Despistado', 'Palabra parecida, no lo sabe'],
   ['preguntas', '💬', 'Preguntas', 'Cada uno responde una pregunta']
 ];
 
@@ -908,13 +908,13 @@ function pintarEspectador(contenedor) {
   const r = v.ronda;
   const esPregunta = e.modo === 'preguntas';
   const fase = v.fase;
-  const quien = e.modo === 'undercover' ? 'UNDERCOVER' : 'IMPOSTOR';
+  const quien = 'IMPOSTOR';
 
   let cabecera = esPregunta
     ? `<div class="esp-clave"><small>Pregunta de todos</small><b>${esc(e.palabra)}</b></div>
        <div class="esp-clave impostor"><small>Pregunta del impostor</small><b>${esc(e.gemela)}</b></div>`
     : `<div class="esp-clave"><small>Palabra (${esc(e.categoria)})</small><b>${esc(e.palabra)}</b></div>
-       ${e.modo === 'undercover' ? `<div class="esp-clave impostor"><small>Palabra del undercover</small><b>${esc(e.gemela)}</b></div>` : ''}`;
+       ${e.modo === 'undercover' ? `<div class="esp-clave impostor"><small>Palabra del impostor</small><b>${esc(e.gemela)}</b></div>` : ''}`;
   if (e.trampa === 'ninguno') cabecera += '<p class="aviso-trampa">🤡 Ronda trampa: no hay ningún impostor</p>';
   if (e.trampa === 'todos') cabecera += '<p class="aviso-trampa">😂 Ronda trampa: todos son impostores</p>';
 
@@ -1343,7 +1343,7 @@ function pintarFinal(recienLlegado) {
   const cajas = [];
   cajas.push(`<div><small>${esPregunta ? 'La pregunta era' : `La palabra era (${esc(f.categoria)})`}</small><b>${esc(f.palabra)}</b></div>`);
   if ((r.modo === 'undercover' || esPregunta) && f.trampa !== 'ninguno') {
-    cajas.push(`<div><small>${esPregunta ? 'La pregunta del impostor era' : 'El undercover tenía'}</small><b>${esc(f.gemela)}</b></div>`);
+    cajas.push(`<div><small>${esPregunta ? 'La pregunta del impostor era' : 'El impostor tenía'}</small><b>${esc(f.gemela)}</b></div>`);
   }
   const quienes = f.trampa === 'ninguno' ? 'Nadie 🤡' : f.trampa === 'todos' ? 'Todos 😂'
     : f.impostores.map((id) => `${avatar(id, 'mini')} ${esc(nombre(id))}`).join('  ');
