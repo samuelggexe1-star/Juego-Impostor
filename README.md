@@ -78,6 +78,20 @@ Está desplegado en Render con `render.yaml` (plan gratis). La dirección está 
 
 El plan gratis se duerme si nadie entra en un rato: la primera vez tarda unos segundos en despertar.
 
+## Animaciones
+
+Están en `efectos.js` y `efectos.css`, compartidas por los dos modos:
+
+- Transiciones entre pantallas con la API *View Transitions* (si el navegador la tiene).
+- Onda al pulsar botones, botones grandes "magnéticos" y tarjetas que se inclinan en 3D con brillo (con ratón).
+- Fondo de partículas que flotan, título que entra letra a letra y brilla en ola.
+- Carta con destello al darle la vuelta; la palabra del impostor tiembla.
+- Estallidos de emojis y chispas al votar, escribir tu palabra, darle a Listo o expulsar al impostor; ✔ que se dibuja.
+- Confeti y destello al ganar; sacudida y destello rojo al perder; rayos de luz girando detrás del resultado.
+- La palabra final y el código de la sala se "descifran" letra a letra; los puntos cuentan hasta su valor.
+
+Solo se animan `transform` y `opacity`, y todo se apaga solo si el móvil tiene activado *reducir movimiento*.
+
 ## Archivos
 
 - `index.html`: pantallas del juego
@@ -86,4 +100,5 @@ El plan gratis se duerme si nadie entra en un rato: la primera vez tarda unos se
 - `online.html`, `online/`: el modo online (cliente, lógica de salas y red)
 - `server.js`: el servidor del modo online
 - `tests/`: pruebas del modo online
+- `efectos.js`, `efectos.css`: las animaciones
 - `palabras.js`: categorías, palabras y preguntas. Para añadir palabras, escribe una línea nueva con el formato `"Palabra / Parecida"`.

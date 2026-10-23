@@ -54,7 +54,10 @@ function animarSiCambia(el, clave) {
 }
 
 function irA(id) {
-  $$('.pantalla').forEach((p) => p.classList.toggle('activa', p.id === id));
+  const actual = $('.pantalla.activa');
+  const poner = () => $$('.pantalla').forEach((p) => p.classList.toggle('activa', p.id === id));
+  // Solo hay transicion cuando de verdad cambia la pantalla (no en cada repintado)
+  if (window.Efectos && (!actual || actual.id !== id)) Efectos.cambio(poner); else poner();
 }
 
 const jugador = (id) => (estado && estado.jugadores.find((j) => j.id === id)) || { id, nombre: '¿?', color: 'gris', conectado: false };
@@ -247,6 +250,7 @@ async function mandar(tipo, datos = {}) {
     return await enviar({ tipo, sala: codigoActual, ...datos });
   } catch (e) {
     aviso(e.message);
+    if (window.Efectos) Efectos.sacudir($('#aviso'), 6);
     return null;
   }
 }
@@ -374,6 +378,7 @@ $('#formChat').addEventListener('submit', async (e) => {
   try {
     await enviar({ tipo: 'chat', sala: codigoActual, nombre: perfil.nombre, color: estado ? jugador(miId()).color : perfil.color, texto });
     input.value = '';
+    if (window.Efectos) Efectos.estallido($('#formChat .btn'), { emojis: ['💬'], n: 5, fuerza: 0.7 });
   } catch (err) { aviso(err.message); }
 });
 
@@ -770,7 +775,15 @@ function pintarBarraEstado() {
   }
   const [icono, texto] = textoEstado(v);
   $('#estadoIcono').textContent = icono;
-  $('#estadoTexto').textContent = texto;
+  // El texto cambia deslizando solo cuando cambia de verdad (no cada segundo del reloj)
+  const sinReloj = texto.replace(/ · ⏱️ .*/, '');
+  if ($('#estadoTexto').dataset.base !== sinReloj && window.Efectos) {
+    $('#estadoTexto').dataset.base = sinReloj;
+    Efectos.cambiarTexto($('#estadoTexto'), texto);
+  } else {
+    $('#estadoTexto').dataset.base = sinReloj;
+    $('#estadoTexto').textContent = texto;
+  }
   barra.classList.toggle('urgente', /Te toca|Vota antes|Adivina/.test(texto) && !/Ya has/.test(texto));
 }
 
@@ -897,7 +910,10 @@ setInterval(() => { pintarRelojes(); if (estado && estado.fin) pintarBarraEstado
 function pintarSala() {
   const v = estado;
   const yo = miId();
-  $('#codigoSala').textContent = v.codigo;
+  if ($('#codigoSala').dataset.codigo !== v.codigo) {
+    $('#codigoSala').dataset.codigo = v.codigo;
+    if (window.Efectos) Efectos.descifrar($('#codigoSala'), v.codigo, 800); else $('#codigoSala').textContent = v.codigo;
+  }
   $('#tituloSala').textContent = v.publica ? `${v.nombre} · sala pública` : 'Código de la sala';
   $('#btnCopiarCodigo').classList.toggle('oculto', v.publica);
   const jugando = v.jugadores.filter((j) => !j.espectador);
@@ -1308,6 +1324,7 @@ $('#btnListo').addEventListener('click', async () => {
   $('#btnListo').disabled = true;
   const r = await mandar('listo', { respuesta: $('#olRespuesta').value });
   if (!r) actualizarBotonListo();
+  else if (window.Efectos) { Efectos.check($('#cartaOnline')); Efectos.estallido($('#btnListo'), { n: 14 }); }
   $('#olRespuesta').blur();
 });
 $('#btnForzarReparto').addEventListener('click', () => {
@@ -1358,6 +1375,7 @@ function pintarPistas() {
     const foco = $('#turnoAvatar');
     foco.classList.remove('entra'); void foco.offsetWidth; foco.classList.add('entra');
     if (miTurno) {
+      if (window.Efectos) { Efectos.destello('rgba(251,191,36,.35)'); Efectos.estallido($('#turnoAvatar'), { n: 16, fuerza: 1.2 }); }
       avisarEnTitulo('✍️ ¡Te toca escribir!');
       $('#inputPista').value = '';
       setTimeout(() => $('#inputPista').focus(), 150);
@@ -1383,7 +1401,10 @@ $('#formPista').addEventListener('submit', async (e) => {
   if (!texto) { aviso('Escribe una palabra'); return; }
   if (texto.split(/\s+/).length > 3) { aviso('Mejor una palabra (o dos) 😉'); return; }
   const r = await mandar('pista', { texto });
-  if (r) { $('#inputPista').blur(); vibrar(30); }
+  if (r) {
+    $('#inputPista').blur(); vibrar(30);
+    if (window.Efectos) Efectos.estallido($('#formPista .btn'), { emojis: ['✍️', '✨', '💬'], n: 12 });
+  }
 });
 $('#btnSaltarPistas').addEventListener('click', () => {
   if (confirm('¿Saltar directamente a la votación?')) mandar('forzar');
@@ -1514,8 +1535,12 @@ function pintarPanelVoto() {
 
 $('#btnVotar').addEventListener('click', async () => {
   $('#btnVotar').disabled = true;
+  const boton = $('#btnVotar');
   const r = await mandar('votar', { votos: borrador });
-  if (r) vibrar(40);
+  if (r) {
+    vibrar(40);
+    if (window.Efectos) { Efectos.estallido(boton, { emojis: ['🗳️', '✨', '👉'], n: 12 }); Efectos.check(boton); }
+  }
   else pintarPanelVoto();
 });
 
@@ -1565,6 +1590,14 @@ function pintarExpulsion() {
   void flotante.offsetWidth; // reinicia la animacion
   if (e.expulsados.length) flotante.classList.add('vuela');
   sonidos.expulsion();
+  if (window.Efectos && e.expulsados.length) {
+    const impostorFuera = e.expulsados.some((id) => e.roles && e.roles[id] === true);
+    const inocenteFuera = e.expulsados.some((id) => e.roles && e.roles[id] === false);
+    setTimeout(() => {
+      if (impostorFuera) { Efectos.destello('rgba(110,231,183,.4)'); Efectos.estallido($('.texto-expulsion'), { emojis: ['🔪', '🎉', '✨'], n: 18, fuerza: 1.5 }); }
+      else if (inocenteFuera) { Efectos.destello('rgba(255,59,59,.35)'); Efectos.sacudir($('#espacio'), 10); }
+    }, 2600);
+  }
 
   $('#textoExpulsion2').textContent = '';
   escribirLento($('#textoExpulsion1'), e.textos[0] || '', 900, () => {
@@ -1639,7 +1672,7 @@ function pintarFinal(recienLlegado) {
 
   const esPregunta = r.modo === 'preguntas';
   const cajas = [];
-  cajas.push(`<div><small>${esPregunta ? 'La pregunta era' : `La palabra era (${esc(f.categoria)})`}</small><b>${esc(f.palabra)}</b></div>`);
+  cajas.push(`<div><small>${esPregunta ? 'La pregunta era' : `La palabra era (${esc(f.categoria)})`}</small><b class="palabra-final" data-texto="${esc(f.palabra)}">${esc(f.palabra)}</b></div>`);
   if ((r.modo === 'undercover' || esPregunta) && f.trampa !== 'ninguno') {
     cajas.push(`<div><small>${esPregunta ? 'La pregunta del impostor era' : 'El impostor tenía'}</small><b>${esc(f.gemela)}</b></div>`);
   }
@@ -1668,7 +1701,7 @@ function pintarFinal(recienLlegado) {
   $('#olMarcador').innerHTML = filas.map((fi, i) => `<div class="marcador-fila">
       <span class="pos">${fi.p > 0 && medallas[i] ? medallas[i] : i + 1}</span>
       ${avatar(fi.id, 'mini')}<span class="nom">${esc(nombre(fi.id))}</span>
-      <span class="pts">${fi.p}${delta[fi.id] ? `<span class="suma">+${delta[fi.id]}</span>` : ''}</span></div>`).join('');
+      <span class="pts" data-pts="${fi.p}" data-suma="${delta[fi.id] || 0}"><span>${fi.p}</span>${delta[fi.id] ? `<span class="suma">+${delta[fi.id]}</span>` : ''}</span></div>`).join('');
 
   const mando = soyAnfitrion();
   $('#btnOtraOl').classList.toggle('oculto', !mando);
@@ -1679,6 +1712,20 @@ function pintarFinal(recienLlegado) {
   if (recienLlegado) {
     if (clase === 'victoria') sonidos.victoria();
     else if (clase === 'derrota') sonidos.derrota();
+    if (window.Efectos) {
+      if (clase === 'victoria') {
+        Efectos.confeti(110);
+        Efectos.destello('rgba(77,163,255,.45)');
+        setTimeout(() => Efectos.estallido($('#bannerTexto'), { emojis: ['🎉', '🏆', '✨', '🥳'], n: 18, fuerza: 1.6 }), 300);
+      } else if (clase === 'derrota') {
+        Efectos.destello('rgba(255,59,59,.5)');
+        Efectos.sacudir(document.body, 12);
+        setTimeout(() => Efectos.estallido($('#bannerTexto'), { emojis: ['💀', '😵', '💔'], n: 12, gravedad: 2 }), 250);
+      }
+      const palabra = $('#olRevelacion .palabra-final');
+      if (palabra) Efectos.descifrar(palabra, palabra.dataset.texto, 1000);
+      $$('#olMarcador .pts[data-pts]').forEach((el) => Efectos.contar(el.firstElementChild, Number(el.dataset.pts), { desde: Number(el.dataset.pts) - Number(el.dataset.suma || 0), duracion: 1300 }));
+    }
   }
 }
 

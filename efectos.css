@@ -1,0 +1,117 @@
+/* =========================================================
+   EFECTOS — estilos de las animaciones de efectos.js
+   ========================================================= */
+
+/* Fondo de partículas detrás de todo */
+#fondoParticulas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+
+/* Capa donde vuelan las partículas, encima de todo pero sin tapar los toques */
+#capaEfectos { position: fixed; inset: 0; pointer-events: none; z-index: 900; overflow: hidden; }
+.particula { position: absolute; will-change: transform, opacity; line-height: 1; }
+.destello-pantalla { position: absolute; inset: 0; }
+
+/* Onda al pulsar */
+.con-onda { overflow: hidden; isolation: isolate; }
+.onda {
+  position: absolute; border-radius: 50%; pointer-events: none; z-index: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.2) 45%, transparent 70%);
+}
+
+/* ✔ que se dibuja */
+.check-dibujo { position: absolute; width: 84px; height: 84px; }
+.check-dibujo svg { width: 100%; height: 100%; }
+.check-dibujo circle { fill: rgba(16, 185, 129, 0.18); stroke: #6ee7b7; stroke-width: 3; stroke-dasharray: 145; stroke-dashoffset: 145; animation: trazo .5s ease-out forwards; }
+.check-dibujo path { fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; animation: trazo .35s .35s ease-out forwards; }
+@keyframes trazo { to { stroke-dashoffset: 0; } }
+
+/* Título letra a letra, y luego cada letra respira por turnos */
+h1 .letras span { display: inline-block; animation: letra-cae .6s cubic-bezier(.34, 1.56, .64, 1) both, letra-ola 6s ease-in-out 1.2s infinite; }
+h1 .letras span:nth-child(2) { animation-delay: .05s, 1.3s, 1.3s; } h1 .letras span:nth-child(3) { animation-delay: .1s, 1.4s, 1.4s; }
+h1 .letras span:nth-child(4) { animation-delay: .15s, 1.5s, 1.5s; } h1 .letras span:nth-child(5) { animation-delay: .2s, 1.6s, 1.6s; }
+h1 .letras span:nth-child(6) { animation-delay: .25s, 1.7s, 1.7s; } h1 .letras span:nth-child(7) { animation-delay: .3s, 1.8s, 1.8s; }
+h1 .letras span:nth-child(8) { animation-delay: .35s, 1.9s, 1.9s; }
+@keyframes letra-cae { from { opacity: 0; transform: translateY(-22px) rotate(-12deg) scale(.6); } }
+@keyframes letra-ola { 0%, 8%, 100% { transform: none; } 4% { transform: translateY(-4px); } }
+/* Con letras sueltas, el brillo pasa letra a letra en vez de con degradado */
+h1:has(.letras) { background: none; -webkit-text-fill-color: currentColor; color: var(--text); animation: none; }
+h1 .letras span { color: var(--text); }
+h1 .letras span { animation: letra-cae .6s cubic-bezier(.34, 1.56, .64, 1) both, letra-ola 6s ease-in-out 1.2s infinite, letra-brillo 6s ease-in-out 1.2s infinite; }
+@keyframes letra-brillo { 0%, 8%, 100% { color: var(--text); text-shadow: none; } 4% { color: var(--accent2); text-shadow: 0 0 14px rgba(110, 231, 183, .7); } }
+
+/* Inclinación 3D con brillo (ordenador) */
+.preset, .modo-ol, .sala-publica { transition: transform .25s cubic-bezier(.23, 1, .32, 1), border-color .2s ease; }
+.inclinada { position: relative; }
+.inclinada::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(circle at var(--brillo-x, 50%) var(--brillo-y, 50%), rgba(255, 255, 255, 0.16), transparent 55%);
+}
+.btn-grande { transition: transform .14s ease, translate .25s cubic-bezier(.23, 1, .32, 1), opacity .12s ease; }
+
+/* La carta: brillo que cruza al darle la vuelta, y la palabra entra con fuerza */
+.carta.girada .carta-frente::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.28) 48%, transparent 66%);
+  background-size: 250% 100%; animation: brillo-carta 1.1s ease-out both;
+}
+@keyframes brillo-carta { from { background-position: 120% 0; } to { background-position: -60% 0; } }
+.carta.girada .carta-frente .palabra, .carta.girada .carta-frente .pregunta { animation: palabra-entra .45s cubic-bezier(.34, 1.56, .64, 1) .12s both; }
+@keyframes palabra-entra { from { opacity: 0; transform: scale(.7) translateY(10px); filter: blur(4px); } }
+.carta.girada .carta-frente.impostor .palabra { animation: palabra-entra .45s cubic-bezier(.34, 1.56, .64, 1) .12s both, temblor .5s .6s ease-in-out 2; }
+@keyframes temblor { 20%, 60% { transform: translateX(-3px) rotate(-1deg); } 40%, 80% { transform: translateX(3px) rotate(1deg); } }
+.carta-dorso { transition: transform .45s cubic-bezier(.23, 1, .32, 1), box-shadow .3s ease; }
+.carta:not(.girada) .carta-dorso { animation: carta-espera 3.2s ease-in-out infinite; }
+@keyframes carta-espera { 50% { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(34, 193, 195, 0.18); } }
+.carta-frente { transition: transform .45s cubic-bezier(.23, 1, .32, 1); }
+
+/* Cambio de pantalla con View Transitions: la vieja se va, la nueva entra */
+/* Mientras dura la transicion, los toques llegan igual a la pantalla nueva */
+::view-transition { pointer-events: none; }
+::view-transition-old(root) { animation: vt-sale .16s cubic-bezier(.4, 0, 1, 1) both; }
+::view-transition-new(root) { animation: vt-entra .3s cubic-bezier(.23, 1, .32, 1) both; }
+@keyframes vt-sale { to { opacity: 0; transform: translateX(-24px) scale(.98); } }
+@keyframes vt-entra { from { opacity: 0; transform: translateX(28px) scale(.98); } }
+
+/* Las ventanas de ajustes / perfil se abren desde abajo con un muelle */
+.modal-caja { animation-timing-function: cubic-bezier(.34, 1.56, .64, 1); }
+
+/* Barras de progreso con brillo que corre */
+.crono-barra div, #olCronoBarra { position: relative; overflow: hidden; }
+.crono-barra div::after, #olCronoBarra::after {
+  content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  transform: translateX(-100%); animation: corre 2s ease-in-out infinite;
+}
+@keyframes corre { to { transform: translateX(100%); } }
+
+/* Banner final: rayos de luz girando detrás */
+.banner-final, .final { position: relative; overflow: hidden; }
+.banner-final::before, .final::before {
+  content: ''; position: absolute; inset: -60%; z-index: 0; pointer-events: none; opacity: .5;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.06) 0deg 10deg, transparent 10deg 24deg);
+  animation: girar 28s linear infinite;
+}
+.banner-final > *, .final > * { position: relative; z-index: 1; }
+.banner-final.derrota::before { background: repeating-conic-gradient(from 0deg, rgba(244, 63, 94, 0.08) 0deg 10deg, transparent 10deg 24deg); }
+
+/* Los muñequitos respiran un poco cuando están en listas */
+.fila-tripulante .trip, .orden-item .trip, .placa .trip { animation: respirar 3.5s ease-in-out infinite; transform-origin: bottom center; }
+.fila-tripulante:nth-child(2n) .trip, .orden-item:nth-child(2n) .trip { animation-delay: -1.7s; }
+@keyframes respirar { 50% { transform: scaleY(1.04) scaleX(.98); } }
+
+/* La línea de "qué está pasando" con un punto que late */
+.barra-linea #estadoTexto { display: inline-block; }
+
+/* Chip del perfil: aro de color que gira muy despacio */
+.chip-perfil { position: relative; }
+.chip-perfil::before {
+  content: ''; position: absolute; inset: -2px; border-radius: inherit; z-index: -1; opacity: .55;
+  background: conic-gradient(from var(--giro, 0deg), var(--accent), transparent 40%, var(--accent2), transparent 80%, var(--accent));
+  animation: aro 6s linear infinite;
+}
+@property --giro { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@keyframes aro { to { --giro: 360deg; } }
+
+/* Nada de esto si el móvil pide menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  #fondoParticulas, #capaEfectos, .onda { display: none; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+}

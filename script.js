@@ -249,7 +249,10 @@ window.addEventListener("beforeunload", (e) => {
 
 function irA(id) {
   mantenerPantalla(id !== "pInicio");
-  $$(".pantalla").forEach((p) => p.classList.toggle("activa", p.id === id));
+  const actual = $(".pantalla.activa");
+  const poner = () => $$(".pantalla").forEach((p) => p.classList.toggle("activa", p.id === id));
+  // Al cambiar de pantalla, transicion suave (View Transitions) si el navegador la tiene
+  if (window.Efectos && (!actual || actual.id !== id)) Efectos.cambio(poner); else poner();
   document.body.classList.remove("modo-impostor-visto");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -374,7 +377,8 @@ $("#formJugador").addEventListener("submit", (e) => {
     if (existe) repetidos++;
     else datos.jugadores.push(nombre.slice(0, 20));
   });
-  if (repetidos) aviso("Ese nombre ya está en la lista");
+  if (repetidos) { aviso("Ese nombre ya está en la lista"); if (window.Efectos) Efectos.sacudir(input); }
+  else if (nuevos.length && window.Efectos) Efectos.estallido(input, { n: 12 });
   input.value = "";
   input.focus();
   guardar();
@@ -678,6 +682,7 @@ prepararCarta($("#cartaRol"), () => {
   if (sabeQueEsImpostor(ronda.actual)) {
     vibrar([60, 40, 60]);
     pitido(220, 0.25);
+    if (window.Efectos) Efectos.destello("rgba(244,63,94,.35)");
   } else {
     vibrar(30);
     pitido(880, 0.08, 0.08);
@@ -686,6 +691,7 @@ prepararCarta($("#cartaRol"), () => {
 
 $("#btnSiguienteReparto").addEventListener("click", () => {
   if (!puedeSeguirReparto()) return;
+  if (window.Efectos) Efectos.check($("#cartaRol"));
   if (ronda.modo === "preguntas") {
     ronda.respuestas[ronda.actual] = $("#inputRespuesta").value.trim();
     $("#inputRespuesta").value = "";
@@ -837,6 +843,7 @@ $("#formEscribir").addEventListener("submit", (e) => {
   if (!texto) { aviso("Escribe una palabra"); return; }
   if (texto.split(" ").length > 3) { aviso("Mejor una palabra (o dos) 😉"); return; }
   $("#inputEscribir").blur();
+  if (window.Efectos) Efectos.estallido($("#formEscribir .btn"), { emojis: ["✍️", "✨"], n: 10 });
   apuntarEscrita(texto);
 });
 $("#btnSaltarTurno").addEventListener("click", () => apuntarEscrita(null, true));
@@ -1124,11 +1131,13 @@ function revelarExpulsado(idx) {
     else rol.innerHTML = "ERA IMPOSTOR 🔪";
     melodia([[523], [659], [784], [1046]]);
     vibrar([80, 50, 80, 50, 200]);
+    if (window.Efectos) { Efectos.estallido(rol, { emojis: ["🔪", "🎉", "✨"], n: 16, fuerza: 1.3 }); Efectos.destello("rgba(110,231,183,.35)"); }
   } else {
     rol.classList.add("es-inocente");
     rol.innerHTML = "ERA INOCENTE 😇";
     melodia([[392], [330], [262]]);
     vibrar(250);
+    if (window.Efectos) { Efectos.sacudir(); Efectos.estallido(rol, { emojis: ["😇", "💔"], n: 8 }); }
   }
 
   const impostoresVivos = [...r.impostores].filter((i) => r.vivos.has(i)).length;
@@ -1270,8 +1279,17 @@ function terminar(resultado, extra = {}) {
   pintarMarcador($("#finalMarcador"), delta);
   irA("pFinal");
 
-  if (clase === "gana-inocentes") { confeti(); melodia([[523], [659], [784], [1046, 450]]); }
-  else if (clase === "gana-impostor") melodia([[392], [370], [349], [330, 500]]);
+  if (clase === "gana-inocentes") {
+    if (window.Efectos) { Efectos.confeti(); Efectos.destello("rgba(110,231,183,.4)"); } else confeti();
+    melodia([[523], [659], [784], [1046, 450]]);
+  } else if (clase === "gana-impostor") {
+    melodia([[392], [370], [349], [330, 500]]);
+    if (window.Efectos) { Efectos.destello("rgba(244,63,94,.45)"); Efectos.sacudir(document.body, 10); Efectos.estallido($("#finalEmoji"), { emojis: ["🔪", "😈", "💀"], n: 14, fuerza: 1.4 }); }
+  }
+  if (window.Efectos) {
+    Efectos.descifrar($("#finalPalabra"), r.palabra, 900);
+    $$("#finalMarcador .pts[data-pts]").forEach((el) => Efectos.contar(el.firstChild, Number(el.dataset.pts), { desde: Number(el.dataset.pts) - Number(el.dataset.suma || 0), duracion: 1200 }));
+  }
 }
 
 function pintarMarcador(cont, delta = {}) {
@@ -1289,7 +1307,7 @@ function pintarMarcador(cont, delta = {}) {
     <div class="marcador-fila">
       <span class="pos">${f.p > 0 && medallas[i] ? medallas[i] : i + 1}</span>
       <span class="nom">${esc(f.n)}</span>
-      <span class="pts">${f.p}${delta[f.n] ? `<span class="suma">+${delta[f.n]}</span>` : ""}</span>
+      <span class="pts" data-pts="${f.p}" data-suma="${delta[f.n] || 0}"><span>${f.p}</span>${delta[f.n] ? `<span class="suma">+${delta[f.n]}</span>` : ""}</span>
     </div>`).join("");
 }
 
